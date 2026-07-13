@@ -19,10 +19,14 @@ async function init() {
   document.getElementById('campaignForm')?.addEventListener('submit', saveCampaign);
 }
 
-function campaignStatusRingClass(status) {
-  if (status === 'Paused') return 'progress-ring-danger';
-  if (status === 'Planning') return 'progress-ring-secondary';
-  return '';
+const CAMPAIGN_STATUS_COLORS = Object.freeze({
+  Live: '#4CAF50',
+  Planning: '#9CA3AF',
+  Paused: '#F59E0B',
+});
+
+function campaignProgressColor(status) {
+  return CAMPAIGN_STATUS_COLORS[status] || CAMPAIGN_STATUS_COLORS.Planning;
 }
 
 function renderCards() {
@@ -36,23 +40,23 @@ function renderCards() {
       ? `<div class="campaign-banner bg-cover bg-center h-44" style="background-image:url('${c.image}')" loading="lazy"></div>`
       : '';
     const cardBg = i === 0 ? 'bg-gradient-to-br from-white via-slate-50 to-slate-100' : 'bg-white';
-    const barColor = c.status === 'Paused' ? 'from-amber-500 to-orange-500' : c.status === 'Planning' ? 'from-emerald-500 to-cyan-500' : 'from-sky-500 to-indigo-600';
+    const progressColor = campaignProgressColor(c.status);
     return `
-      <article class="campaign-card ${cardBg} shadow-xl rounded-[28px] border border-slate-200/80 overflow-hidden">
+      <article class="campaign-card ${cardBg} shadow-xl rounded-[28px] border border-slate-200/80 overflow-hidden" style="--campaign-progress-color: ${progressColor}; --campaign-progress-value: ${pct};">
         ${banner}
         <div class="p-6">
           <div class="flex items-start justify-between gap-3 mb-4">
             <span class="badge ${statusBadgeClass(c.status)}">${c.status}</span>
-            <div class="progress-ring ${campaignStatusRingClass(c.status)}" style="background:conic-gradient(var(--primary,#2563EB) ${pct}%, rgba(226,232,240,0.8) 0)"><span>${pct}%</span></div>
+            <div class="progress-ring"><span>${pct}%</span></div>
           </div>
-          <h3 class="text-xl font-semibold mb-3">${c.name}</h3>
+          <div class="flex items-center justify-between gap-3"><h3 class="text-xl font-semibold mb-3">${c.name}</h3><a href="campaign-detail.html?id=${c.id}" class="text-sky-600 text-sm font-semibold">View</a></div>
           <p class="text-slate-500 mb-5">${c.description}</p>
           <div class="flex items-center justify-between text-sm text-slate-600 mb-5">
             <span>Goal ${formatCurrency(c.goal)}</span>
             <span>Raised ${formatCurrency(c.raised)}</span>
           </div>
-          <div class="h-3 rounded-full bg-slate-200 overflow-hidden mb-5">
-            <div class="h-full rounded-full bg-gradient-to-r ${barColor}" style="width:${pct}%"></div>
+          <div class="campaign-progress-track h-3 rounded-full overflow-hidden mb-5">
+            <div class="campaign-progress-bar h-full rounded-full" style="width:${pct}%"></div>
           </div>
         </div>
       </article>`;

@@ -100,7 +100,7 @@ function exportDonations() {
     { label: 'ID', value: (d) => d.id },
     { label: 'Donor', value: (d) => donors.find((x) => x.id === d.donorId)?.name || '' },
     { label: 'Campaign', value: (d) => d.campaign },
-    { label: 'Amount', value: (d) => d.amount },
+    { label: 'Amount (PHP)', value: (d) => formatCurrency(d.amount) },
     { label: 'Date', value: (d) => d.date },
     { label: 'Status', value: (d) => d.status },
   ]);

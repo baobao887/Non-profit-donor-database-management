@@ -1,3 +1,5 @@
+import { formatCurrency } from './utils.js';
+
 export function initCharts() {
   if (typeof Chart === 'undefined') return;
 
@@ -76,10 +78,16 @@ function chartLineOptions() {
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (context) => formatCurrency(context.parsed.y) } },
+    },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#64748B' } },
-      y: { grid: { color: 'rgba(148, 163, 184, 0.18)' }, ticks: { color: '#64748B' } },
+      y: {
+        grid: { color: 'rgba(148, 163, 184, 0.18)' },
+        ticks: { color: '#64748B', callback: (value) => formatCurrency(value) },
+      },
     },
   };
 }
@@ -106,7 +114,7 @@ export function updateDashboardCharts(donations) {
     const labels = Object.keys(byMonth);
     if (labels.length) {
       line.data.labels = labels;
-      line.data.datasets[0].data = labels.map((l) => byMonth[l] / 1000);
+      line.data.datasets[0].data = labels.map((l) => byMonth[l]);
       line.update();
     }
   }
