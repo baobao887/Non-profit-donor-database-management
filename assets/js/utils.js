@@ -1,5 +1,11 @@
+const phpNumberFormatter = new Intl.NumberFormat('en-PH', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+  const value = Number(amount);
+  return `₱${phpNumberFormatter.format(Number.isFinite(value) ? value : 0)}`;
 }
 
 export function formatDate(dateStr) {

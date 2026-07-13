@@ -154,7 +154,7 @@ function exportDonors() {
     { label: 'Email', value: (d) => d.email },
     { label: 'Phone', value: (d) => d.phone },
     { label: 'Level', value: (d) => d.level },
-    { label: 'Lifetime', value: (d) => d.lifetime },
+    { label: 'Lifetime (PHP)', value: (d) => formatCurrency(d.lifetime) },
     { label: 'Status', value: (d) => d.status },
   ]);
 }
