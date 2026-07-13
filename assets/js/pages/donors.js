@@ -93,6 +93,7 @@ function render() {
       <td class="py-4"><span class="badge ${statusBadgeClass(d.status)}">${d.status}</span></td>
       <td class="py-4 pr-6">
         <div class="flex gap-2">
+          <a class="btn-primary-outline btn-sm" href="donor-profile.html?id=${d.id}">View</a>
           <button type="button" class="btn-primary-outline btn-sm" data-edit="${d.id}">Edit</button>
           <button type="button" class="btn-danger-outline btn-sm" data-delete="${d.id}">Delete</button>
         </div>

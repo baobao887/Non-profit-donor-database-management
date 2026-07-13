@@ -15,16 +15,7 @@
   <div class="min-h-screen flex">
     <div id="sidebar-root"></div>
     <main class="flex-1 px-6 py-6">
-      <header class="grid gap-6 lg:grid-cols-[1.3fr_auto] items-center mb-8">
-        <div>
-          <p class="text-slate-500 text-sm">Dashboard / Overview</p>
-          <h1 class="text-4xl font-semibold tracking-tight">Good Morning, Admin 👋</h1>
-          <p class="mt-2 text-slate-500 max-w-2xl">Track donor engagement, review donations, and drive campaign growth.</p>
-        </div>
-        <div id="topbar-root"></div>
-      </header>
-      <section class="grid gap-6 xl:grid-cols-[1.5fr_1fr] mb-8">
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Key performance indicators" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 mb-6">
           <article class="metric-card p-6 rounded-[28px] bg-white shadow-xl border border-slate-200/70">
             <div class="flex items-center justify-between mb-5">
               <div class="icon-chip bg-sky-100 text-sky-700"><i class="fa-solid fa-user-group"></i></div>
@@ -54,41 +45,22 @@
             <p class="text-sm uppercase tracking-[0.24em] text-slate-500 mb-2">Live campaigns</p>
             <h2 class="text-3xl font-semibold" id="stat-active-campaigns-display">—</h2>
           </article>
-        </div>
-        <div class="relative rounded-[28px] bg-gradient-to-br from-sky-600 to-indigo-700 p-6 text-white overflow-hidden shadow-2xl">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.35),_transparent_45%)]"></div>
-          <div class="relative z-10">
-            <p class="uppercase tracking-[0.3em] text-sm opacity-80">Campaign pulse</p>
-            <h3 class="text-3xl font-semibold mt-3 mb-6">Donor momentum</h3>
-            <p class="max-w-md text-sm opacity-90 mb-8">Data updates live as you add donors and donations.</p>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="rounded-3xl bg-white/10 p-4"><p class="text-sm opacity-80">Donors tracked</p><p class="text-2xl font-semibold" id="stat-donors-pulse">—</p></div>
-              <div class="rounded-3xl bg-white/10 p-4"><p class="text-sm opacity-80">Total raised</p><p class="text-2xl font-semibold" id="stat-donations-pulse">—</p></div>
-            </div>
-          </div>
-        </div>
       </section>
-      <section class="grid gap-6 xl:grid-cols-[1.5fr_1fr] mb-8">
+      <section aria-label="Dashboard charts" class="grid gap-6 xl:grid-cols-[1.5fr_1fr] mb-8">
         <div class="card-glass p-6 shadow-xl rounded-[28px]">
           <div class="flex items-center justify-between mb-5">
             <div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Activity</p><h3 class="text-xl font-semibold">Donation trend</h3></div>
           </div>
           <canvas id="lineChart" class="chart-canvas" height="190"></canvas>
         </div>
-        <div class="grid gap-6">
-          <div class="card-glass p-6 shadow-xl rounded-[28px]">
-            <div class="mb-5"><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Donor sources</p><h3 class="text-xl font-semibold">Contribution mix</h3></div>
-            <canvas id="pieChart" class="chart-canvas-compact" height="170"></canvas>
-          </div>
-          <div class="card-glass p-6 shadow-xl rounded-[28px]">
-            <div class="mb-5"><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Pipeline</p><h3 class="text-xl font-semibold">Campaign progress</h3></div>
-            <div class="space-y-4" id="campaign-progress-list"></div>
-          </div>
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <div class="mb-5"><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Donor sources</p><h3 class="text-xl font-semibold">Contribution mix</h3></div>
+          <canvas id="pieChart" class="chart-canvas-compact" height="170"></canvas>
         </div>
       </section>
-      <section class="grid gap-6 xl:grid-cols-[0.72fr_0.63fr_0.65fr] mb-8">
+      <section aria-label="Recent activity" class="grid gap-6 xl:grid-cols-[1.45fr_0.75fr] mb-8">
         <div class="card-glass p-6 shadow-xl rounded-[28px] overflow-hidden">
-          <h3 class="text-xl font-semibold mb-5">Recent donations</h3>
+          <div class="flex items-center justify-between mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Recent activity</p><h3 class="text-xl font-semibold">Latest donations</h3></div><a href="donations.html" class="text-sm font-semibold text-sky-600">View all</a></div>
           <div class="overflow-x-auto table-scroll max-h-80 overflow-y-auto">
             <table class="min-w-full text-left border-separate border-spacing-y-3">
               <thead class="text-slate-500 text-sm uppercase tracking-[0.18em]">
@@ -102,14 +74,10 @@
           <h3 class="text-xl font-semibold mb-5">Top donors</h3>
           <div class="space-y-4" id="top-donors-list"></div>
         </div>
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <h3 class="text-xl font-semibold mb-5">Quick links</h3>
-          <div class="space-y-3">
-            <a href="donors.html" class="block rounded-3xl bg-white p-4 shadow-sm border border-slate-200 hover:border-sky-200 transition">Manage donors →</a>
-            <a href="donations.html" class="block rounded-3xl bg-white p-4 shadow-sm border border-slate-200 hover:border-sky-200 transition">Log a donation →</a>
-            <a href="campaigns.html" class="block rounded-3xl bg-white p-4 shadow-sm border border-slate-200 hover:border-sky-200 transition">View campaigns →</a>
-          </div>
-        </div>
+      </section>
+      <section aria-label="Campaign alerts" class="card-glass p-6 shadow-xl rounded-[28px] mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Campaign alerts</p><h3 class="text-xl font-semibold">Live campaigns requiring attention</h3></div><a href="campaigns.html" class="text-sm font-semibold text-sky-600">Manage campaigns</a></div>
+        <div class="grid gap-5 xl:grid-cols-2" id="campaign-progress-list"></div>
       </section>
     </main>
   </div>

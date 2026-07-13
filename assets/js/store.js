@@ -18,15 +18,73 @@ export async function initStore() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      cache = JSON.parse(saved);
+      cache = hydrateDemoData(JSON.parse(saved));
+      persist();
       return cache;
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
   }
-  cache = await loadSeed();
+  cache = hydrateDemoData(await loadSeed());
   persist();
   return cache;
+}
+
+// Keeps the demo useful even when opened directly from the file system. These
+// records are deliberately client-side placeholders for a future API.
+function hydrateDemoData(data) {
+  const names = [
+    ['Amara Chen', 'amara.chen@example.org'], ['Noah Bennett', 'noah.bennett@example.org'],
+    ['Priya Nair', 'priya.nair@example.org'], ['Theo Martin', 'theo.martin@example.org'],
+    ['Lina Okafor', 'lina.okafor@example.org'], ['Mateo Silva', 'mateo.silva@example.org'],
+    ['Grace Wilson', 'grace.wilson@example.org'], ['Omar Haddad', 'omar.haddad@example.org'],
+    ['Hannah Brooks', 'hannah.brooks@example.org'], ['Elliot Park', 'elliot.park@example.org'],
+    ['Zoe Morgan', 'zoe.morgan@example.org'], ['David Okoro', 'david.okoro@example.org'],
+    ['Maya Patel', 'maya.patel@example.org'], ['Isaac Reed', 'isaac.reed@example.org']
+  ];
+  data.donors ||= [];
+  names.forEach(([name, email], index) => {
+    const id = `d${index + 7}`;
+    if (!data.donors.some((d) => d.id === id)) data.donors.push({
+      id, name, email, phone: `+1 555 01${String(index + 10).padStart(2, '0')}`,
+      level: ['Bronze', 'Silver', 'Gold', 'Platinum'][index % 4], role: ['Monthly Giver', 'Volunteer', 'Community Partner', 'Major Donor'][index % 4],
+      lifetime: 1800 + index * 2750, lastDonation: `2026-06-${String((index % 25) + 1).padStart(2, '0')}`, status: index % 6 === 0 ? 'Pending' : 'Active'
+    });
+  });
+  data.campaigns ||= [];
+  const campaignNames = ['Youth Arts Fund', 'Healthy Homes', 'Green Neighborhoods', 'Emergency Relief', 'Women in Tech'];
+  campaignNames.forEach((name, index) => {
+    const id = `c${index + 6}`;
+    if (!data.campaigns.some((c) => c.id === id)) data.campaigns.push({
+      id, name, description: `Community-led support for ${name.toLowerCase()}.`, goal: 90000 + index * 15000,
+      raised: 24000 + index * 17500, status: index === 3 ? 'Planning' : 'Live', image: null
+    });
+  });
+  data.donations ||= [];
+  const methods = ['Card', 'Bank', 'PayPal', 'Visa'];
+  while (data.donations.length < 50) {
+    const index = data.donations.length;
+    data.donations.push({ id: `D-${1200 + index}`, donorId: data.donors[index % data.donors.length].id,
+      campaign: data.campaigns[index % data.campaigns.length].name, amount: 125 + (index * 175) % 4800,
+      date: `2026-${String(1 + (index % 6)).padStart(2, '0')}-${String(2 + (index % 26)).padStart(2, '0')}`,
+      method: methods[index % methods.length], status: index % 13 === 0 ? 'Pending' : 'Succeeded' });
+  }
+  data.communications ||= [];
+  while (data.communications.length < 15) {
+    const index = data.communications.length;
+    data.communications.push({ id: `cm${index + 1}`, type: ['Email outreach', 'Call logged', 'Meeting note'][index % 3],
+      donorId: data.donors[index % data.donors.length].id, staff: ['Avery Jordan', 'Nora Adams', 'Riley Chen'][index % 3],
+      date: `2026-07-${String(index + 1).padStart(2, '0')}T10:00:00`, status: index % 4 === 0 ? 'Pending' : 'Sent',
+      content: 'Recorded stewardship follow-up and updated the donor relationship notes.' });
+  }
+  data.staff ||= [
+    { id: 's1', name: 'Avery Jordan', role: 'Administrator', email: 'avery@donortrack.org' },
+    { id: 's2', name: 'Nora Adams', role: 'Development Manager', email: 'nora@donortrack.org' },
+    { id: 's3', name: 'Riley Chen', role: 'Donor Relations', email: 'riley@donortrack.org' },
+    { id: 's4', name: 'Samira Khan', role: 'Campaign Lead', email: 'samira@donortrack.org' },
+    { id: 's5', name: 'Leo Grant', role: 'Finance Officer', email: 'leo@donortrack.org' }
+  ];
+  return data;
 }
 
 function persist() {
@@ -112,6 +170,28 @@ export function addCommunication(entry) {
   store.communications.unshift({ id, date: new Date().toISOString(), ...entry });
   persist();
   return id;
+}
+
+export function getStaff() { return [...getStore().staff]; }
+
+export function addStaff(member) {
+  const id = 's' + Date.now();
+  getStore().staff.unshift({ id, ...member });
+  persist();
+  return id;
+}
+
+export function updateStaff(id, updates) {
+  const member = getStore().staff.find((s) => s.id === id);
+  if (!member) return false;
+  Object.assign(member, updates);
+  persist();
+  return true;
+}
+
+export function deleteStaff(id) {
+  getStore().staff = getStore().staff.filter((s) => s.id !== id);
+  persist();
 }
 
 export function getStats() {

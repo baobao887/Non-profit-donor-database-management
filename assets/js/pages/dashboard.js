@@ -14,9 +14,6 @@ async function init() {
   document.getElementById('stat-campaigns')?.replaceChildren(document.createTextNode(String(stats.campaignCount)));
   document.getElementById('stat-active-campaigns')?.replaceChildren(document.createTextNode(String(stats.activeCampaigns)));
   document.getElementById('stat-active-campaigns-display')?.replaceChildren(document.createTextNode(String(stats.activeCampaigns)));
-  document.getElementById('stat-donors-pulse')?.replaceChildren(document.createTextNode(String(stats.totalDonors)));
-  document.getElementById('stat-donations-pulse')?.replaceChildren(document.createTextNode(formatCurrency(stats.totalDonations)));
-
   renderRecentDonations();
   renderTopDonors();
   renderCampaignProgress();
@@ -63,14 +60,15 @@ function renderCampaignProgress() {
   const campaigns = getCampaigns().filter((c) => c.status === 'Live').slice(0, 2);
   container.innerHTML = campaigns.map((c) => {
     const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
-    const color = pct >= 70 ? 'from-sky-500 to-indigo-600' : 'from-emerald-500 to-cyan-500';
+    const needsAttention = pct < 70;
+    const color = needsAttention ? 'from-amber-400 to-orange-500' : 'from-sky-500 to-indigo-600';
     return `
       <div class="progress-summary">
         <div><p class="font-semibold">${c.name}</p><p class="text-slate-500 text-sm">${formatCurrency(c.raised)} raised of ${formatCurrency(c.goal)}</p></div>
-        <span class="text-slate-600">${pct}%</span>
+        <span class="badge ${needsAttention ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}">${needsAttention ? 'Needs attention' : 'On track'}</span>
       </div>
-      <div class="h-3 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r ${color}" style="width:${pct}%"></div></div>`;
-  }).join('');
+      <div class="flex items-center gap-3"><div class="h-3 flex-1 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r ${color}" style="width:${pct}%"></div></div><span class="text-sm font-semibold text-slate-600">${pct}%</span></div>`;
+  }).join('') || '<p class="text-slate-500">No live campaign alerts right now.</p>';
 }
 
 function emptyRow(cols, msg) {

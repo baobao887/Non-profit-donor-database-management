@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { href: 'campaigns.html', icon: 'fa-bullhorn', label: 'Campaigns' },
   { href: 'donations.html', icon: 'fa-hand-holding-dollar', label: 'Donations' },
   { href: 'communications.html', icon: 'fa-comments', label: 'Communications' },
+  { href: 'staff.html', icon: 'fa-users-gear', label: 'Staff' },
   { href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
 ];
 
@@ -46,11 +47,6 @@ export function renderSidebar() {
         </button>
       </div>
       <nav class="mt-2 px-4 space-y-1">${links}</nav>
-      <div class="px-4 mt-8 pt-6 border-t border-slate-200/70">
-        <button type="button" class="theme-toggle w-full flex items-center gap-3 rounded-3xl px-4 py-3 text-slate-600 hover:bg-slate-100 transition" aria-label="Toggle theme">
-          <i class="fa-solid fa-moon"></i> <span>Dark mode</span>
-        </button>
-      </div>
     </aside>`;
 
   const btn = document.getElementById('mobileMenuBtn');
@@ -88,7 +84,10 @@ export function renderTopBar(options = {}) {
         <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
         <input type="search" id="globalSearch" placeholder="Search donors, campaigns..." class="border-0 bg-transparent outline-none text-sm text-slate-700 w-48 md:w-64" />
       </div>` : ''}
-      <button type="button" class="icon-button" aria-label="Notifications"><i class="fa-regular fa-bell"></i></button>
+      <div class="relative">
+        <button type="button" id="notificationButton" class="icon-button" aria-label="Notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i></button>
+        <div id="notificationMenu" class="notification-menu" hidden><p class="font-semibold px-4 py-3 border-b">Notifications</p><a href="donations.html">2 pending donations need review</a><a href="campaigns.html">Summer School Drive ends soon</a></div>
+      </div>
       ${showTheme ? `<button type="button" class="icon-button theme-toggle" aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>` : ''}
       <button type="button" class="profile-pill inline-flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow-sm border border-slate-200">
         <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=64&q=80" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy" width="36" height="36" />
@@ -102,6 +101,12 @@ export function renderTopBar(options = {}) {
       const q = e.target.value.trim();
       if (q) location.href = `donors.html?q=${encodeURIComponent(q)}`;
     }
+  });
+  document.getElementById('notificationButton')?.addEventListener('click', (e) => {
+    const menu = document.getElementById('notificationMenu');
+    const open = menu.hasAttribute('hidden');
+    menu.toggleAttribute('hidden', !open);
+    e.currentTarget.setAttribute('aria-expanded', String(open));
   });
 }
 
