@@ -1,0 +1,1 @@
+<?php echo "MARKER_FILE_WORKS_12345"; ?>

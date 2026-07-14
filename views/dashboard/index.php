@@ -1,14 +1,14 @@
 <?php
-require_once '../../config/paths.php';
+require_once __DIR__ . '/../../config/paths.php';
 require_once CONFIG_PATH . 'constants.php';
 require_once CONFIG_PATH . 'database.php';
 require_once INCLUDES_PATH . 'auth.php';
-
+ 
 // Set page variables for layout
 $pageTitle = 'DonorTrack | Dashboard';
 $currentPage = 'dashboard.php';
 $assetPath = ASSET_URL;
-
+ 
 // Check authentication
 if (!checkSession()) {
     header('Location: ' . ROOT_PATH . 'login.php');

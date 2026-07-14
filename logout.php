@@ -9,6 +9,6 @@ require_once 'includes/auth.php';
 logoutUser();
 
 // Redirect to login
-header('Location: login.html');
+header('Location: login.php');
 exit;
 ?>

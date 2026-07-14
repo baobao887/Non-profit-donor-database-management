@@ -1,11 +1,12 @@
+console.log("LAYOUT_JS_VERSION_TEST_999");
 const NAV_ITEMS = [
-  { href: '/dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
-  { href: '/donors.php', icon: 'fa-user-group', label: 'Donors' },
-  { href: '/campaigns.php', icon: 'fa-bullhorn', label: 'Campaigns' },
-  { href: '/donations.php', icon: 'fa-hand-holding-dollar', label: 'Donations' },
-  { href: '/communications.php', icon: 'fa-comments', label: 'Communications' },
-  { href: '/staff.php', icon: 'fa-users-gear', label: 'Staff' },
-  { href: '/reports.php', icon: 'fa-chart-pie', label: 'Reports' },
+  { href: 'dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
+  { href: 'donors.php', icon: 'fa-user-group', label: 'Donors' },
+  { href: 'campaigns.php', icon: 'fa-bullhorn', label: 'Campaigns' },
+  { href: 'donations.php', icon: 'fa-hand-holding-dollar', label: 'Donations' },
+  { href: 'communications.php', icon: 'fa-comments', label: 'Communications' },
+  { href: 'staff.php', icon: 'fa-users-gear', label: 'Staff' },
+  { href: 'reports.php', icon: 'fa-chart-pie', label: 'Reports' },
 ];
 
 function currentPage() {
@@ -25,32 +26,14 @@ function navLink(item, active) {
 }
 
 export function renderSidebar() {
-  const root = document.getElementById('sidebar-root');
-  if (!root) return;
+  // The PHP includes/sidebar.php already renders the button, overlay, logo,
+  // and panel shell server-side. We only need to fill the empty <nav id="sidebar-nav">
+  // with the link list — not rebuild the whole sidebar.
+  const nav = document.getElementById('sidebar-nav');
+  if (!nav) return;
 
   const page = currentPage();
-  const links = NAV_ITEMS.map((item) => navLink(item, item.href === page)).join('');
-
-  root.innerHTML = `
-    <button type="button" id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open menu">
-      <i class="fa-solid fa-bars"></i>
-    </button>
-    <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
-    <aside id="sidebarPanel" class="sidebar-panel bg-white/90 shadow-2xl backdrop-blur-2xl border border-slate-200/70">
-      <div class="sidebar-top flex items-center justify-between px-6 py-6">
-        <div class="brand-logo flex items-center gap-3">
-          <div class="w-12 h-12 rounded-3xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-xl">D</div>
-          <div>
-            <h1 class="text-xl font-semibold tracking-tight">DonorTrack</h1>
-            <p class="text-sm text-slate-500">Donor Management</p>
-          </div>
-        </div>
-        <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close menu">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <nav class="mt-2 px-4 space-y-1">${links}</nav>
-    </aside>`;
+  nav.innerHTML = NAV_ITEMS.map((item) => navLink(item, item.href === page)).join('');
 
   const btn = document.getElementById('mobileMenuBtn');
   const overlay = document.getElementById('sidebarOverlay');
@@ -68,7 +51,7 @@ export function renderSidebar() {
   btn?.addEventListener('click', openSidebar);
   closeBtn?.addEventListener('click', closeSidebar);
   overlay?.addEventListener('click', closeSidebar);
-  root.querySelectorAll('.nav-link').forEach((link) => {
+  nav.querySelectorAll('.nav-link').forEach((link) => {
     link.addEventListener('click', () => {
       if (window.innerWidth < 900) closeSidebar();
     });
