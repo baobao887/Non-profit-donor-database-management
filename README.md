@@ -1,5 +1,10 @@
-# Non-profit-donor-database-management
-DonorTrack System Overview
+# DonorTrack - Non-Profit Donor Database Management System
+
+A comprehensive web application for managing donors, campaigns, and donations for non-profit organizations.
+
+**Status:** Backend implementation complete ✅ | Frontend conversion in progress 🔄
+
+## Overview
 
 DonorTrack is a web-based donor management system designed for non-profit organizations to centralize and manage donor-related information. The system replaces manual record-keeping (such as spreadsheets and paper records) with a structured relational database that allows staff and administrators to efficiently manage donors, donations, fundraising campaigns, communication history, and reports.
 

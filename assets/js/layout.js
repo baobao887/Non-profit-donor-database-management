@@ -1,15 +1,18 @@
 const NAV_ITEMS = [
-  { href: 'index.html', icon: 'fa-chart-line', label: 'Dashboard' },
-  { href: 'donors.html', icon: 'fa-user-group', label: 'Donors' },
-  { href: 'campaigns.html', icon: 'fa-bullhorn', label: 'Campaigns' },
-  { href: 'donations.html', icon: 'fa-hand-holding-dollar', label: 'Donations' },
-  { href: 'communications.html', icon: 'fa-comments', label: 'Communications' },
-  { href: 'staff.html', icon: 'fa-users-gear', label: 'Staff' },
-  { href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
+  { href: '/dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
+  { href: '/donors.php', icon: 'fa-user-group', label: 'Donors' },
+  { href: '/campaigns.php', icon: 'fa-bullhorn', label: 'Campaigns' },
+  { href: '/donations.php', icon: 'fa-hand-holding-dollar', label: 'Donations' },
+  { href: '/communications.php', icon: 'fa-comments', label: 'Communications' },
+  { href: '/staff.php', icon: 'fa-users-gear', label: 'Staff' },
+  { href: '/reports.php', icon: 'fa-chart-pie', label: 'Reports' },
 ];
 
 function currentPage() {
-  return document.body.dataset.page || location.pathname.split('/').pop() || 'index.html';
+  const page = document.body.dataset.page || location.pathname.split('/').pop() || 'dashboard.php';
+  // Handle /index.php and /dashboard.php
+  if (page === 'index.php') return 'dashboard.php';
+  return page;
 }
 
 function navLink(item, active) {
@@ -84,11 +87,11 @@ export function renderTopBar(options = {}) {
         <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
         <input type="search" id="globalSearch" placeholder="Search donors, campaigns..." class="border-0 bg-transparent outline-none text-sm text-slate-700 w-48 md:w-64" />
       </div>` : ''}
+      ${showTheme ? `<button type="button" class="icon-button theme-toggle" aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>` : ''}
       <div class="relative">
         <button type="button" id="notificationButton" class="icon-button" aria-label="Notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i></button>
         <div id="notificationMenu" class="notification-menu" hidden><p class="font-semibold px-4 py-3 border-b">Notifications</p><a href="donations.html">2 pending donations need review</a><a href="campaigns.html">Summer School Drive ends soon</a></div>
       </div>
-      ${showTheme ? `<button type="button" class="icon-button theme-toggle" aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>` : ''}
       <button type="button" class="profile-pill inline-flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow-sm border border-slate-200">
         <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=64&q=80" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy" width="36" height="36" />
         <span class="text-sm font-medium">Avery</span>
@@ -96,12 +99,14 @@ export function renderTopBar(options = {}) {
       </button>
     </div>`;
 
-  document.getElementById('globalSearch')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const q = e.target.value.trim();
-      if (q) location.href = `donors.html?q=${encodeURIComponent(q)}`;
+ document.getElementById('globalSearch')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const q = e.target.value.trim();
+    if (q) {
+      location.href = `donors.php?q=${encodeURIComponent(q)}`;
     }
-  });
+  }
+});
   document.getElementById('notificationButton')?.addEventListener('click', (e) => {
     const menu = document.getElementById('notificationMenu');
     const open = menu.hasAttribute('hidden');
@@ -111,8 +116,10 @@ export function renderTopBar(options = {}) {
 }
 
 export function initTheme() {
-  const saved = localStorage.getItem('donortrack_theme');
-  if (saved === 'dark') document.body.classList.add('theme-dark');
+  // Theme is stored in system preferences only, no localStorage persistence
+  // Check if system prefers dark mode
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (prefersDark) document.body.classList.add('theme-dark');
 
   document.querySelectorAll('.theme-toggle').forEach((toggle) => {
     if (toggle.dataset.bound) return;
@@ -126,7 +133,6 @@ export function initTheme() {
     toggle.addEventListener('click', () => {
       document.body.classList.toggle('theme-dark');
       const dark = document.body.classList.contains('theme-dark');
-      localStorage.setItem('donortrack_theme', dark ? 'dark' : 'light');
       document.querySelectorAll('.theme-toggle i').forEach((ic) => {
         ic.classList.toggle('fa-moon', !dark);
         ic.classList.toggle('fa-sun', dark);

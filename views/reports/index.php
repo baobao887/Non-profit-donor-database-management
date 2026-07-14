@@ -1,0 +1,67 @@
+<?php
+require_once '../../config/paths.php';
+require_once CONFIG_PATH . 'constants.php';
+require_once CONFIG_PATH . 'database.php';
+require_once INCLUDES_PATH . 'auth.php';
+
+$pageTitle = 'DonorTrack | Reports';
+$currentPage = 'reports.php';
+$assetPath = ASSET_URL;
+
+if (!checkSession()) {
+    header('Location: ' . ROOT_PATH . 'login.php');
+    exit;
+}
+?>
+<?php include INCLUDES_PATH . 'header.php'; ?>
+<div class="min-h-screen flex">
+    <?php include INCLUDES_PATH . 'sidebar.php'; ?>
+    <main class="flex-1 px-6 py-6">
+      <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div>
+          <p class="text-sm text-slate-500">Reports / Analytics</p>
+          <h2 class="text-3xl font-semibold tracking-tight">Impact analytics</h2>
+        </div>
+        <button type="button" id="exportReport" class="btn-secondary px-4 py-3 rounded-2xl">Print / Export PDF</button>
+      </header>
+      <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] mb-8">
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-5">Revenue performance</h3>
+          <canvas id="reportsLineChart" class="chart-canvas" height="190"></canvas>
+        </div>
+        <div class="grid gap-6">
+          <div class="card-glass p-6 shadow-xl rounded-[28px]">
+            <h3 class="text-xl font-semibold mb-4">Donor distribution</h3>
+            <canvas id="donorPieChart" class="chart-canvas-compact" height="170"></canvas>
+          </div>
+          <div class="card-glass p-6 shadow-xl rounded-[28px]">
+            <h3 class="text-xl font-semibold mb-4">Payment channels</h3>
+            <div class="space-y-4" id="payment-breakdown"></div>
+          </div>
+        </div>
+      </section>
+      <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-5">Campaign results</h3>
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div class="rounded-3xl bg-slate-50 p-4"><p class="text-slate-500 text-sm">Top campaign</p><p class="text-3xl font-semibold" id="report-top">—</p></div>
+            <div class="rounded-3xl bg-slate-50 p-4"><p class="text-slate-500 text-sm">Avg. raised</p><p class="text-3xl font-semibold" id="report-avg">—</p></div>
+            <div class="rounded-3xl bg-slate-50 p-4"><p class="text-slate-500 text-sm">Goal progress</p><p class="text-3xl font-semibold" id="report-conversion">—</p></div>
+          </div>
+        </div>
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-5">Activity heatmap</h3>
+          <div class="grid grid-cols-5 gap-2 text-[11px] text-slate-500 mb-4">
+            <span class="text-center">Mon</span><span class="text-center">Tue</span><span class="text-center">Wed</span><span class="text-center">Thu</span><span class="text-center">Fri</span>
+          </div>
+          <div class="grid grid-cols-5 gap-2">
+            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div>
+            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div><div class="h-14 rounded-3xl bg-slate-500"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="<?php echo ASSET_URL; ?>js/pages/reports.js"></script>
+<?php include INCLUDES_PATH . 'footer.php'; ?>

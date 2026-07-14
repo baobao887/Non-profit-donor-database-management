@@ -91,6 +91,10 @@ img {
   border-radius: 22px;
 }
 
+.dashboard-header {
+  min-height: 50px;
+}
+
 .profile-pill {
   transition: transform 0.2s ease;
 }
