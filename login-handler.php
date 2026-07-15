@@ -45,7 +45,7 @@ try {
     
     // Login user
     loginUser($user);
-    
+
     // Determine redirect page
     $redirect = 'index.php';
     

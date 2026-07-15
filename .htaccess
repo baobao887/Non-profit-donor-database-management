@@ -10,7 +10,7 @@ DirectoryIndex index.php index.html
     RewriteEngine On
     
     # Set the base path
-    RewriteBase /
+    RewriteBase /Non-profit-donor-database-management/
     
     # Don't rewrite if it's a real file
     RewriteCond %{REQUEST_FILENAME} !-f
