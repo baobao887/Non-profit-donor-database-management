@@ -1,19 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DonorTrack | Campaigns</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="assets/css/style.css" />
-</head>
-<body class="bg-slate-50 text-slate-900" data-page="campaigns.html">
-  <div class="min-h-screen flex">
-    <div id="sidebar-root"></div>
+<?php
+require_once __DIR__ . '/../../config/paths.php';
+require_once CONFIG_PATH . 'constants.php';
+require_once CONFIG_PATH . 'database.php';
+require_once INCLUDES_PATH . 'auth.php';
+
+$pageTitle = 'DonorTrack | Campaigns';
+$currentPage = 'campaigns.php';
+$assetPath = ASSET_URL;
+
+if (!checkSession()) {
+    header('Location: ' . ROOT_PATH . 'login.php');
+    exit;
+}
+?>
+<?php include INCLUDES_PATH . 'header.php'; ?>
+<div class="min-h-screen flex">
+    <?php include INCLUDES_PATH . 'sidebar.php'; ?>
     <main class="flex-1 px-6 py-6">
       <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
@@ -60,6 +62,5 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="assets/js/pages/campaigns.js"></script>
-</body>
-</html>
+  <script type="module" src="<?php echo ASSET_URL; ?>js/pages/campaigns.js"></script>
+<?php include INCLUDES_PATH . 'footer.php'; ?>

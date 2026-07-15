@@ -1,0 +1,60 @@
+# DonorTrack .htaccess Configuration
+# Enable URL rewriting and security settings
+
+# Force index.php to be preferred over any index.html in this folder,
+# regardless of the server's global DirectoryIndex order.
+DirectoryIndex index.php index.html
+
+# Enable mod_rewrite
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Set the base path
+    RewriteBase /Non-profit-donor-database-management/
+    
+    # Don't rewrite if it's a real file
+    RewriteCond %{REQUEST_FILENAME} !-f
+    
+    # Don't rewrite if it's a real directory
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rewrite URLs to index.php or PHP files
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Disable directory listing
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# Set proper encoding
+AddType text/html;charset=UTF-8 .html .php
+
+# Compress text files
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+</IfModule>
+
+# Cache control headers
+# NOTE: JS/CSS caching is disabled during development so file edits always show up.
+# Before going live, re-enable long-term caching (with versioned filenames) for performance.
+<FilesMatch "\.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+<FilesMatch "\.(css|js)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+
+<FilesMatch "\.(php|html)$">
+    Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+</FilesMatch>
+
+# Security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Remove server signature
+ServerSignature Off

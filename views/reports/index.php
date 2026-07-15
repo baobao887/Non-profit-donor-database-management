@@ -1,19 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DonorTrack | Reports</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="assets/css/style.css" />
-</head>
-<body class="bg-slate-50 text-slate-900" data-page="reports.html">
-  <div class="min-h-screen flex">
-    <div id="sidebar-root"></div>
+<?php
+require_once __DIR__ . '/../../config/paths.php';
+require_once CONFIG_PATH . 'constants.php';
+require_once CONFIG_PATH . 'database.php';
+require_once INCLUDES_PATH . 'auth.php';
+
+$pageTitle = 'DonorTrack | Reports';
+$currentPage = 'reports.php';
+$assetPath = ASSET_URL;
+
+if (!checkSession()) {
+    header('Location: ' . ROOT_PATH . 'login.php');
+    exit;
+}
+?>
+<?php include INCLUDES_PATH . 'header.php'; ?>
+<div class="min-h-screen flex">
+    <?php include INCLUDES_PATH . 'sidebar.php'; ?>
     <main class="flex-1 px-6 py-6">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
@@ -48,19 +50,20 @@
           </div>
         </div>
         <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <h3 class="text-xl font-semibold mb-5">Activity heatmap</h3>
+          <h3 class="text-xl font-semibold mb-5">Donation activity by weekday</h3>
           <div class="grid grid-cols-5 gap-2 text-[11px] text-slate-500 mb-4">
             <span class="text-center">Mon</span><span class="text-center">Tue</span><span class="text-center">Wed</span><span class="text-center">Thu</span><span class="text-center">Fri</span>
           </div>
-          <div class="grid grid-cols-5 gap-2">
-            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div>
-            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div><div class="h-14 rounded-3xl bg-slate-500"></div>
+          <div class="grid grid-cols-5 gap-2 mb-2" id="activity-heatmap-count" title="Donations logged">
+            <div class="h-14 rounded-3xl bg-slate-100" data-weekday="Mon"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Tue"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Wed"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Thu"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Fri"></div>
+          </div>
+          <div class="grid grid-cols-5 gap-2" id="activity-heatmap-revenue" title="Revenue raised">
+            <div class="h-14 rounded-3xl bg-slate-100" data-weekday="Mon"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Tue"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Wed"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Thu"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Fri"></div>
           </div>
         </div>
       </section>
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="assets/js/pages/reports.js"></script>
-</body>
-</html>
+  <script type="module" src="<?php echo ASSET_URL; ?>js/pages/reports.js"></script>
+<?php include INCLUDES_PATH . 'footer.php'; ?>

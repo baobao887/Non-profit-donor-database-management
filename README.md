@@ -1,5 +1,10 @@
-# Non-profit-donor-database-management
-DonorTrack System Overview
+# DonorTrack - Non-Profit Donor Database Management System
+
+A comprehensive web application for managing donors, campaigns, and donations for non-profit organizations.
+
+**Status:** Complete ✅ — PHP/MySQL backend with all pages converted from the original static prototype
+
+## Overview
 
 DonorTrack is a web-based donor management system designed for non-profit organizations to centralize and manage donor-related information. The system replaces manual record-keeping (such as spreadsheets and paper records) with a structured relational database that allows staff and administrators to efficiently manage donors, donations, fundraising campaigns, communication history, and reports.
 
@@ -183,8 +188,8 @@ The application is web-based and accessible through common web browsers.
 
 Technology stack:
 
-Frontend: HTML, CSS, JavaScript, Bootstrap
-Backend: PHP
+Frontend: PHP-rendered HTML, Tailwind CSS, vanilla JavaScript (ES modules)
+Backend: PHP (PDO)
 Database: MySQL
 
 The interface is designed to be simple enough for non-technical staff while remaining responsive across desktops, laptops, and tablets.

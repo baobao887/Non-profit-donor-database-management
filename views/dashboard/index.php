@@ -1,20 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DonorTrack | Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="assets/css/style.css" />
-</head>
-<body class="bg-slate-50 text-slate-900" data-page="index.html">
-  <div class="min-h-screen flex">
-    <div id="sidebar-root"></div>
+<?php
+require_once __DIR__ . '/../../config/paths.php';
+require_once CONFIG_PATH . 'constants.php';
+require_once CONFIG_PATH . 'database.php';
+require_once INCLUDES_PATH . 'auth.php';
+ 
+// Set page variables for layout
+$pageTitle = 'DonorTrack | Dashboard';
+$currentPage = 'dashboard.php';
+$assetPath = ASSET_URL;
+ 
+// Check authentication
+if (!checkSession()) {
+    header('Location: ' . ROOT_PATH . 'login.php');
+    exit;
+}
+?>
+<?php
+$pageTitle = 'DonorTrack | Dashboard';
+include INCLUDES_PATH . 'header.php';
+?>
+<div class="min-h-screen flex">
+    <?php include INCLUDES_PATH . 'sidebar.php'; ?>
     <main class="flex-1 px-6 py-6">
+      <?php include INCLUDES_PATH . 'navbar.php'; ?>
       <section aria-label="Key performance indicators" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 mb-6">
           <article class="metric-card p-6 rounded-[28px] bg-white shadow-xl border border-slate-200/70">
             <div class="flex items-center justify-between mb-5">
@@ -60,7 +68,7 @@
       </section>
       <section aria-label="Recent activity" class="grid gap-6 xl:grid-cols-[1.45fr_0.75fr] mb-8">
         <div class="card-glass p-6 shadow-xl rounded-[28px] overflow-hidden">
-          <div class="flex items-center justify-between mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Recent activity</p><h3 class="text-xl font-semibold">Latest donations</h3></div><a href="donations.html" class="text-sm font-semibold text-sky-600">View all</a></div>
+          <div class="flex items-center justify-between mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Recent activity</p><h3 class="text-xl font-semibold">Latest donations</h3></div><a href="<?php echo ROOT_PATH; ?>donations.php" class="text-sm font-semibold text-sky-600">View all</a></div>
           <div class="overflow-x-auto table-scroll max-h-80 overflow-y-auto">
             <table class="min-w-full text-left border-separate border-spacing-y-3">
               <thead class="text-slate-500 text-sm uppercase tracking-[0.18em]">
@@ -76,12 +84,11 @@
         </div>
       </section>
       <section aria-label="Campaign alerts" class="card-glass p-6 shadow-xl rounded-[28px] mb-8">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Campaign alerts</p><h3 class="text-xl font-semibold">Live campaigns requiring attention</h3></div><a href="campaigns.html" class="text-sm font-semibold text-sky-600">Manage campaigns</a></div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5"><div><p class="text-sm uppercase tracking-[0.24em] text-slate-500">Campaign alerts</p><h3 class="text-xl font-semibold">Live campaigns requiring attention</h3></div><a href="<?php echo ROOT_PATH; ?>campaigns.php" class="text-sm font-semibold text-sky-600">Manage campaigns</a></div>
         <div class="grid gap-5 xl:grid-cols-2" id="campaign-progress-list"></div>
       </section>
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="assets/js/pages/dashboard.js"></script>
-</body>
-</html>
+  <script type="module" src="<?php echo ASSET_URL; ?>js/pages/dashboard.js"></script>
+<?php include INCLUDES_PATH . 'footer.php'; ?>

@@ -1,209 +1,478 @@
-const STORAGE_KEY = 'donortrack_data';
+/**
+ * Data Store - API-Based (No localStorage, no mock data)
+ * Fetches all data from MySQL database via PHP APIs
+ */
 
 let cache = null;
+let sessionCheckInterval = null;
 
-async function loadSeed() {
-  try {
-    const res = await fetch('assets/data/seed.json');
-    if (res.ok) return res.json();
-  } catch {
-    /* file:// or offline — use embedded seed */
-  }
-  return embeddedSeed;
-}
-
-const embeddedSeed = {"donors":[{"id":"d1","name":"Jordan Doe","email":"jordan@example.com","phone":"+1 415 555 0145","level":"Platinum","role":"Community Advocate","lifetime":56200,"lastDonation":"2026-06-23","status":"Active"},{"id":"d2","name":"Sofia Alvarez","email":"sofia@hope.org","phone":"+1 212 555 0199","level":"Gold","role":"Major Donor","lifetime":24800,"lastDonation":"2026-06-18","status":"Pending"},{"id":"d3","name":"Max King","email":"max.king@kind.org","phone":"+44 20 7946 0987","level":"Silver","role":"Recurring Supporter","lifetime":12150,"lastDonation":"2026-06-12","status":"Inactive"},{"id":"d4","name":"Elena Grant","email":"elena@grant.org","phone":"+1 503 555 0122","level":"Platinum","role":"Board Member","lifetime":89400,"lastDonation":"2026-06-25","status":"Active"},{"id":"d5","name":"Marcus Kim","email":"marcus@kim.co","phone":"+1 617 555 0188","level":"Gold","role":"Corporate Partner","lifetime":42000,"lastDonation":"2026-06-24","status":"Active"},{"id":"d6","name":"Renton Lee","email":"renton@lee.net","phone":"+1 206 555 0166","level":"Bronze","role":"Monthly Giver","lifetime":3200,"lastDonation":"2026-06-22","status":"Active"}],"donations":[{"id":"D-1205","donorId":"d4","campaign":"General fund","amount":7500,"date":"2026-06-25","method":"Visa","status":"Succeeded"},{"id":"D-1204","donorId":"d5","campaign":"Annual gala","amount":22000,"date":"2026-06-24","method":"Card","status":"Pending"},{"id":"D-1203","donorId":"d6","campaign":"Monthly pledges","amount":1400,"date":"2026-06-22","method":"PayPal","status":"Refund"},{"id":"D-1202","donorId":"d1","campaign":"Clean water push","amount":4200,"date":"2026-06-24","method":"Card","status":"Pending"},{"id":"D-1201","donorId":"d2","campaign":"Education fund","amount":18200,"date":"2026-06-22","method":"Bank","status":"Processing"},{"id":"D-1200","donorId":"d3","campaign":"Summer School Drive","amount":2500,"date":"2026-06-20","method":"Visa","status":"Succeeded"}],"campaigns":[{"id":"c1","name":"Summer School Drive","description":"Empowering 1,200 students with mentorship programs and classroom supplies.","goal":240000,"raised":174000,"status":"Live","image":"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"},{"id":"c2","name":"Community Wellness","description":"Healthcare access support with preventative care and advocacy campaigns.","goal":160000,"raised":61000,"status":"Planning","image":null},{"id":"c3","name":"Clean Water Push","description":"Raising funds for safe water infrastructure in rural communities.","goal":120000,"raised":65000,"status":"Paused","image":null},{"id":"c4","name":"Back-to-school","description":"School supplies and scholarships for underserved communities.","goal":180000,"raised":132000,"status":"Live","image":null},{"id":"c5","name":"Food access","description":"Meal programs and food pantry support across partner sites.","goal":120000,"raised":85000,"status":"Live","image":null}],"communications":[{"id":"cm1","type":"Email outreach","donorId":"d1","staff":"Jordan Doe","date":"2026-07-08T10:00:00","status":"Sent","content":"Followed up on the new campaign launch and shared the donor impact story with personalized messaging."},{"id":"cm2","type":"Call logged","donorId":"d2","staff":"Sofia Alvarez","date":"2026-06-24T14:30:00","status":"In review","content":"Discussed donor preferences for recurring giving and updated campaign interests for the stewardship team."},{"id":"cm3","type":"Meeting note","donorId":"d5","staff":"Marcus Brown","date":"2026-06-22T09:00:00","status":"Pending","content":"Staff confirmed donor communication preferences and scheduled an introduction call for next week."}]};
-
+/**
+ * Initialize store and verify authentication
+ */
 export async function initStore() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      cache = hydrateDemoData(JSON.parse(saved));
-      persist();
-      return cache;
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+  try {
+    const sessionRes = await fetch('api/check-session.php');
+    if (!sessionRes.ok) {
+      window.location.href = 'login.php';
+      return false;
     }
+    
+    const sessionData = await sessionRes.json();
+    if (!sessionData.authenticated) {
+      window.location.href = 'login.php';
+      return false;
+    }
+    
+    cache = { donors: [], campaigns: [], donations: [], communications: [], staff: [], stats: {} };
+    if (!sessionCheckInterval) {
+      sessionCheckInterval = setInterval(checkSession, 300000);
+    }
+    return true;
+  } catch (error) {
+    console.error('Store initialization error:', error);
+    window.location.href = 'login.php';
+    return false;
   }
-  cache = hydrateDemoData(await loadSeed());
-  persist();
-  return cache;
 }
 
-// Keeps the demo useful even when opened directly from the file system. These
-// records are deliberately client-side placeholders for a future API.
-function hydrateDemoData(data) {
-  const names = [
-    ['Amara Chen', 'amara.chen@example.org'], ['Noah Bennett', 'noah.bennett@example.org'],
-    ['Priya Nair', 'priya.nair@example.org'], ['Theo Martin', 'theo.martin@example.org'],
-    ['Lina Okafor', 'lina.okafor@example.org'], ['Mateo Silva', 'mateo.silva@example.org'],
-    ['Grace Wilson', 'grace.wilson@example.org'], ['Omar Haddad', 'omar.haddad@example.org'],
-    ['Hannah Brooks', 'hannah.brooks@example.org'], ['Elliot Park', 'elliot.park@example.org'],
-    ['Zoe Morgan', 'zoe.morgan@example.org'], ['David Okoro', 'david.okoro@example.org'],
-    ['Maya Patel', 'maya.patel@example.org'], ['Isaac Reed', 'isaac.reed@example.org']
-  ];
-  data.donors ||= [];
-  names.forEach(([name, email], index) => {
-    const id = `d${index + 7}`;
-    if (!data.donors.some((d) => d.id === id)) data.donors.push({
-      id, name, email, phone: `+1 555 01${String(index + 10).padStart(2, '0')}`,
-      level: ['Bronze', 'Silver', 'Gold', 'Platinum'][index % 4], role: ['Monthly Giver', 'Volunteer', 'Community Partner', 'Major Donor'][index % 4],
-      lifetime: 1800 + index * 2750, lastDonation: `2026-06-${String((index % 25) + 1).padStart(2, '0')}`, status: index % 6 === 0 ? 'Pending' : 'Active'
+async function checkSession() {
+  try {
+    const res = await fetch('api/check-session.php');
+    if (!res.ok) {
+      clearInterval(sessionCheckInterval);
+      window.location.href = 'login.php';
+    }
+  } catch (error) {
+    console.error('Session check error:', error);
+  }
+}
+
+/**
+ * Dashboard/Statistics Functions
+ */
+export async function getStats() {
+  try {
+    const res = await fetch('api/dashboard.php');
+    if (!res.ok) throw new Error('Failed to fetch stats');
+    const stats = await res.json();
+    cache.stats = stats;
+    return stats;
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    return { totalDonors: 0, totalDonations: 0, campaignCount: 0, activeCampaigns: 0, topDonors: [], recentDonations: [], campaignsNeedingAttention: [] };
+  }
+}
+
+/**
+ * Donor Functions
+ */
+export async function getDonors(page = 1, status = null) {
+  try {
+    let url = `api/donors.php?action=list&page=${page}`;
+    if (status) url += `&status=${status}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch donors');
+    const data = await res.json();
+    cache.donors = data.donors || [];
+    return cache.donors;
+  } catch (error) {
+    console.error('Error fetching donors:', error);
+    return [];
+  }
+}
+
+export async function getDonor(id) {
+  try {
+    const res = await fetch(`api/donors.php?action=get&id=${id}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donor:', error);
+    return null;
+  }
+}
+
+export async function getTopDonors(limit = 5) {
+  try {
+    const res = await fetch(`api/donors.php?action=top&limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch top donors');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching top donors:', error);
+    return [];
+  }
+}
+
+export async function searchDonors(query) {
+  try {
+    const res = await fetch(`api/donors.php?action=search&q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Failed to search donors');
+    return await res.json();
+  } catch (error) {
+    console.error('Error searching donors:', error);
+    return [];
+  }
+}
+
+export async function addDonor(donor) {
+  try {
+    const res = await fetch('api/donors.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donor)
     });
-  });
-  data.campaigns ||= [];
-  const campaignNames = ['Youth Arts Fund', 'Healthy Homes', 'Green Neighborhoods', 'Emergency Relief', 'Women in Tech'];
-  campaignNames.forEach((name, index) => {
-    const id = `c${index + 6}`;
-    if (!data.campaigns.some((c) => c.id === id)) data.campaigns.push({
-      id, name, description: `Community-led support for ${name.toLowerCase()}.`, goal: 90000 + index * 15000,
-      raised: 24000 + index * 17500, status: index === 3 ? 'Planning' : 'Live', image: null
+    if (!res.ok) throw new Error('Failed to create donor');
+    const data = await res.json();
+    return data.donor_id;
+  } catch (error) {
+    console.error('Error adding donor:', error);
+    throw error;
+  }
+}
+
+export async function updateDonor(id, updates) {
+  try {
+    const res = await fetch('api/donors.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ donor_id: id, ...updates })
     });
-  });
-  data.donations ||= [];
-  const methods = ['Card', 'Bank', 'PayPal', 'Visa'];
-  while (data.donations.length < 50) {
-    const index = data.donations.length;
-    data.donations.push({ id: `D-${1200 + index}`, donorId: data.donors[index % data.donors.length].id,
-      campaign: data.campaigns[index % data.campaigns.length].name, amount: 125 + (index * 175) % 4800,
-      date: `2026-${String(1 + (index % 6)).padStart(2, '0')}-${String(2 + (index % 26)).padStart(2, '0')}`,
-      method: methods[index % methods.length], status: index % 13 === 0 ? 'Pending' : 'Succeeded' });
+    if (!res.ok) throw new Error('Failed to update donor');
+    return true;
+  } catch (error) {
+    console.error('Error updating donor:', error);
+    throw error;
   }
-  data.communications ||= [];
-  while (data.communications.length < 15) {
-    const index = data.communications.length;
-    data.communications.push({ id: `cm${index + 1}`, type: ['Email outreach', 'Call logged', 'Meeting note'][index % 3],
-      donorId: data.donors[index % data.donors.length].id, staff: ['Avery Jordan', 'Nora Adams', 'Riley Chen'][index % 3],
-      date: `2026-07-${String(index + 1).padStart(2, '0')}T10:00:00`, status: index % 4 === 0 ? 'Pending' : 'Sent',
-      content: 'Recorded stewardship follow-up and updated the donor relationship notes.' });
+}
+
+export async function deleteDonor(id) {
+  try {
+    const res = await fetch('api/donors.php?action=archive', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ donor_id: id })
+    });
+    if (!res.ok) throw new Error('Failed to delete donor');
+    return true;
+  } catch (error) {
+    console.error('Error deleting donor:', error);
+    throw error;
   }
-  data.staff ||= [
-    { id: 's1', name: 'Avery Jordan', role: 'Administrator', email: 'avery@donortrack.org' },
-    { id: 's2', name: 'Nora Adams', role: 'Development Manager', email: 'nora@donortrack.org' },
-    { id: 's3', name: 'Riley Chen', role: 'Donor Relations', email: 'riley@donortrack.org' },
-    { id: 's4', name: 'Samira Khan', role: 'Campaign Lead', email: 'samira@donortrack.org' },
-    { id: 's5', name: 'Leo Grant', role: 'Finance Officer', email: 'leo@donortrack.org' }
-  ];
-  return data;
 }
 
-function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-}
-
-export function getStore() {
-  if (!cache) throw new Error('Store not initialized');
-  return cache;
-}
-
-export function getDonors() {
-  return [...getStore().donors];
-}
-
-export function getDonor(id) {
-  return getStore().donors.find((d) => d.id === id);
-}
-
-export function addDonor(donor) {
-  const store = getStore();
-  const id = 'd' + Date.now();
-  store.donors.unshift({ id, lifetime: 0, lastDonation: null, ...donor });
-  persist();
-  return id;
-}
-
-export function updateDonor(id, updates) {
-  const store = getStore();
-  const idx = store.donors.findIndex((d) => d.id === id);
-  if (idx === -1) return false;
-  store.donors[idx] = { ...store.donors[idx], ...updates };
-  persist();
-  return true;
-}
-
-export function deleteDonor(id) {
-  const store = getStore();
-  store.donors = store.donors.filter((d) => d.id !== id);
-  persist();
-}
-
-export function getDonations() {
-  return [...getStore().donations].sort((a, b) => b.date.localeCompare(a.date));
-}
-
-export function addDonation(donation) {
-  const store = getStore();
-  const num = store.donations.length + 1200;
-  const id = 'D-' + num;
-  const donor = getDonor(donation.donorId);
-  store.donations.unshift({ id, ...donation });
-  if (donor) {
-    donor.lifetime += Number(donation.amount);
-    donor.lastDonation = donation.date;
-    donor.status = 'Active';
+/**
+ * Campaign Functions
+ */
+export async function getCampaigns(page = 1, status = null) {
+  try {
+    let url = `api/campaigns.php?action=list&page=${page}`;
+    if (status) url += `&status=${status}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch campaigns');
+    const data = await res.json();
+    cache.campaigns = data.campaigns || [];
+    return cache.campaigns;
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    return [];
   }
-  const campaign = store.campaigns.find((c) => c.name === donation.campaign);
-  if (campaign) campaign.raised += Number(donation.amount);
-  persist();
-  return id;
 }
 
-export function getCampaigns() {
-  return [...getStore().campaigns];
+export async function getLiveCampaigns() {
+  try {
+    const res = await fetch('api/campaigns.php?action=live');
+    if (!res.ok) throw new Error('Failed to fetch live campaigns');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching live campaigns:', error);
+    return [];
+  }
 }
 
-export function addCampaign(campaign) {
-  const store = getStore();
-  const id = 'c' + Date.now();
-  store.campaigns.unshift({ id, raised: 0, ...campaign });
-  persist();
-  return id;
+export async function getCampaignById(id) {
+  try {
+    const res = await fetch(`api/campaigns.php?action=get&id=${id}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching campaign:', error);
+    return null;
+  }
 }
 
-export function getCommunications() {
-  return [...getStore().communications].sort((a, b) => b.date.localeCompare(a.date));
+export async function addCampaign(campaign) {
+  try {
+    const res = await fetch('api/campaigns.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(campaign)
+    });
+    if (!res.ok) throw new Error('Failed to create campaign');
+    const data = await res.json();
+    return data.campaign_id;
+  } catch (error) {
+    console.error('Error adding campaign:', error);
+    throw error;
+  }
 }
 
-export function addCommunication(entry) {
-  const store = getStore();
-  const id = 'cm' + Date.now();
-  store.communications.unshift({ id, date: new Date().toISOString(), ...entry });
-  persist();
-  return id;
+export async function updateCampaign(id, updates) {
+  try {
+    const res = await fetch('api/campaigns.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: id, ...updates })
+    });
+    if (!res.ok) throw new Error('Failed to update campaign');
+    return true;
+  } catch (error) {
+    console.error('Error updating campaign:', error);
+    throw error;
+  }
 }
 
-export function getStaff() { return [...getStore().staff]; }
-
-export function addStaff(member) {
-  const id = 's' + Date.now();
-  getStore().staff.unshift({ id, ...member });
-  persist();
-  return id;
+export async function updateCampaignStatus(id, status) {
+  try {
+    const res = await fetch('api/campaigns.php?action=update-status', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: id, status })
+    });
+    if (!res.ok) throw new Error('Failed to update campaign status');
+    return true;
+  } catch (error) {
+    console.error('Error updating campaign status:', error);
+    throw error;
+  }
 }
 
-export function updateStaff(id, updates) {
-  const member = getStore().staff.find((s) => s.id === id);
-  if (!member) return false;
-  Object.assign(member, updates);
-  persist();
-  return true;
+/**
+ * Donation Functions
+ */
+export async function getDonations(page = 1) {
+  try {
+    const res = await fetch(`api/donations.php?action=list&page=${page}`);
+    if (!res.ok) throw new Error('Failed to fetch donations');
+    const data = await res.json();
+    cache.donations = data.donations || [];
+    return cache.donations;
+  } catch (error) {
+    console.error('Error fetching donations:', error);
+    return [];
+  }
 }
 
-export function deleteStaff(id) {
-  getStore().staff = getStore().staff.filter((s) => s.id !== id);
-  persist();
+export async function getDonationsByDonor(donorId) {
+  try {
+    const res = await fetch(`api/donations.php?action=by-donor&donor_id=${donorId}`);
+    if (!res.ok) throw new Error('Failed to fetch donor donations');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donor donations:', error);
+    return [];
+  }
 }
 
-export function getStats() {
-  const store = getStore();
-  const totalDonors = store.donors.length;
-  const totalDonations = store.donations.reduce((s, d) => s + (d.status !== 'Refund' ? d.amount : 0), 0);
-  const activeCampaigns = store.campaigns.filter((c) => c.status === 'Live').length;
-  const avgGift = store.donations.length ? Math.round(totalDonations / store.donations.length) : 0;
-  return { totalDonors, totalDonations, activeCampaigns, avgGift, campaignCount: store.campaigns.length };
+export async function getRecentDonations(limit = 10) {
+  try {
+    const res = await fetch(`api/donations.php?action=recent&limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch recent donations');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching recent donations:', error);
+    return [];
+  }
 }
 
+export async function getDonationTrend(months = 6) {
+  try {
+    const res = await fetch(`api/donations.php?action=trend&months=${months}`);
+    if (!res.ok) throw new Error('Failed to fetch donation trend');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donation trend:', error);
+    return [];
+  }
+}
+
+export async function getDonationBreakdown() {
+  try {
+    const res = await fetch('api/donations.php?action=breakdown');
+    if (!res.ok) throw new Error('Failed to fetch donation breakdown');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donation breakdown:', error);
+    return [];
+  }
+}
+
+export async function getPaymentMethodBreakdown() {
+  try {
+    const res = await fetch('api/donations.php?action=payment-breakdown');
+    if (!res.ok) throw new Error('Failed to fetch payment breakdown');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching payment breakdown:', error);
+    return [];
+  }
+}
+
+export async function getWeekdayRevenue() {
+  try {
+    const res = await fetch('api/donations.php?action=weekday-revenue');
+    if (!res.ok) throw new Error('Failed to fetch weekday revenue');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching weekday revenue:', error);
+    return [];
+  }
+}
+
+export async function addDonation(donation) {
+  try {
+    const res = await fetch('api/donations.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donation)
+    });
+    if (!res.ok) throw new Error('Failed to create donation');
+    const data = await res.json();
+    return data.donation_id;
+  } catch (error) {
+    console.error('Error adding donation:', error);
+    throw error;
+  }
+}
+
+export async function updateDonation(id, updates) {
+  try {
+    const res = await fetch('api/donations.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ donation_id: id, ...updates })
+    });
+    if (!res.ok) throw new Error('Failed to update donation');
+    return true;
+  } catch (error) {
+    console.error('Error updating donation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Communication Functions
+ */
+export async function getCommunications(page = 1) {
+  try {
+    const res = await fetch(`api/communications.php?action=list&page=${page}`);
+    if (!res.ok) throw new Error('Failed to fetch communications');
+    const data = await res.json();
+    cache.communications = data.communications || [];
+    return cache.communications;
+  } catch (error) {
+    console.error('Error fetching communications:', error);
+    return [];
+  }
+}
+
+export async function getCommunicationsByDonor(donorId) {
+  try {
+    const res = await fetch(`api/communications.php?action=by-donor&donor_id=${donorId}`);
+    if (!res.ok) throw new Error('Failed to fetch donor communications');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donor communications:', error);
+    return [];
+  }
+}
+
+export async function addCommunication(entry) {
+  try {
+    const res = await fetch('api/communications.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    if (!res.ok) throw new Error('Failed to create communication');
+    const data = await res.json();
+    return data.communication_id;
+  } catch (error) {
+    console.error('Error adding communication:', error);
+    throw error;
+  }
+}
+
+/**
+ * Staff Functions
+ */
+export async function getStaff() {
+  try {
+    const res = await fetch('api/staff.php?action=list');
+    if (!res.ok) throw new Error('Failed to fetch staff');
+    const data = await res.json();
+    cache.staff = data.staff || [];
+    return cache.staff;
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    return [];
+  }
+}
+
+export async function addStaff(member) {
+  try {
+    const res = await fetch('api/staff.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(member)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add staff member');
+    return data.user_id;
+  } catch (error) {
+    console.error('Error adding staff member:', error);
+    throw error;
+  }
+}
+
+export async function updateStaff(id, updates) {
+  try {
+    const res = await fetch('api/staff.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: id, ...updates })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update staff member');
+    return true;
+  } catch (error) {
+    console.error('Error updating staff member:', error);
+    throw error;
+  }
+}
+
+export async function deleteStaff(id) {
+  try {
+    const res = await fetch('api/staff.php?action=delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to remove staff member');
+    return true;
+  } catch (error) {
+    console.error('Error removing staff member:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reset Store
+ */
 export function resetStore() {
-  localStorage.removeItem(STORAGE_KEY);
   cache = null;
+  if (sessionCheckInterval) {
+    clearInterval(sessionCheckInterval);
+    sessionCheckInterval = null;
+  }
 }

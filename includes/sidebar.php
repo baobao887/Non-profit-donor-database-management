@@ -1,0 +1,25 @@
+<?php
+/**
+ * Sidebar Component
+ * Container for sidebar - rendered by JavaScript
+ */
+?>
+<button type="button" id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open menu">
+  <i class="fa-solid fa-bars"></i>
+</button>
+<div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+<aside id="sidebarPanel" class="sidebar-panel bg-white/90 shadow-2xl backdrop-blur-2xl border border-slate-200/70">
+  <div class="sidebar-top flex items-center justify-between px-6 py-6">
+    <div class="brand-logo flex items-center gap-3">
+      <div class="w-12 h-12 rounded-3xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-xl">D</div>
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight">DonorTrack</h1>
+        <p class="text-sm text-slate-500">Donor Management</p>
+      </div>
+    </div>
+    <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close menu">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <nav class="mt-2 px-4 space-y-1" id="sidebar-nav"></nav>
+</aside>
