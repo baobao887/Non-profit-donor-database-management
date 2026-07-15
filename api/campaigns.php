@@ -17,6 +17,18 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+/**
+ * Admin check that returns JSON instead of redirecting — requireAdmin() in
+ * includes/functions.php is built for page routers (it redirects), which
+ * breaks the JSON contract this endpoint promises to the frontend.
+ */
+function requireApiAdmin() {
+    if (!isAdmin()) {
+        http_response_code(403);
+        die(json_encode(['error' => 'Admin access required']));
+    }
+}
+
 try {
     $pdo = getDB();
     $campaignModel = new Campaign($pdo);
@@ -81,7 +93,7 @@ try {
     // POST requests
     elseif ($method === 'POST') {
         if ($action === 'create') {
-            requireAdmin();
+            requireApiAdmin();
             $data = json_decode(file_get_contents('php://input'), true);
             
             $campaignName = trim($data['campaign_name'] ?? '');
@@ -116,7 +128,7 @@ try {
     // PUT requests
     elseif ($method === 'PUT') {
         if ($action === 'update') {
-            requireAdmin();
+            requireApiAdmin();
             $data = json_decode(file_get_contents('php://input'), true);
             $campaignId = (int)($data['campaign_id'] ?? 0);
             
@@ -147,7 +159,7 @@ try {
             ]);
         }
         elseif ($action === 'update-status') {
-            requireAdmin();
+            requireApiAdmin();
             $data = json_decode(file_get_contents('php://input'), true);
             $campaignId = (int)($data['campaign_id'] ?? 0);
             $status = $data['status'] ?? null;

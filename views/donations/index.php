@@ -50,7 +50,7 @@ if (!checkSession()) {
             <option value="Succeeded">Succeeded</option>
             <option value="Pending">Pending</option>
             <option value="Processing">Processing</option>
-            <option value="Refund">Refund</option>
+            <option value="Refunded">Refunded</option>
           </select>
         </div>
         <div class="overflow-x-auto table-scroll">
@@ -85,7 +85,7 @@ if (!checkSession()) {
         <div class="form-field"><label for="donationDate">Date</label><input id="donationDate" type="date" class="input-glass" required /></div>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field"><label for="donationMethod">Method</label>
-            <select id="donationMethod" class="input-glass"><option>Visa</option><option>Card</option><option>PayPal</option><option>Bank</option></select>
+            <select id="donationMethod" class="input-glass"><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
           </div>
           <div class="form-field"><label for="donationStatus">Status</label>
             <select id="donationStatus" class="input-glass"><option>Succeeded</option><option>Pending</option><option>Processing</option></select>

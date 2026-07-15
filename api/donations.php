@@ -72,6 +72,14 @@ try {
             $breakdown = $donationModel->getBreakdownByCampaign();
             echo json_encode($breakdown);
         }
+        elseif ($action === 'payment-breakdown') {
+            $breakdown = $donationModel->getPaymentMethodBreakdown();
+            echo json_encode($breakdown);
+        }
+        elseif ($action === 'weekday-revenue') {
+            $revenue = $donationModel->getWeekdayRevenue();
+            echo json_encode($revenue);
+        }
         else {
             http_response_code(400);
             echo json_encode(['error' => 'Invalid action']);

@@ -187,6 +187,32 @@ class Campaign {
     }
     
     /**
+     * Get the single campaign with the highest amount raised
+     */
+    public function getTopByRaised() {
+        $stmt = $this->pdo->query("
+            SELECT * FROM campaigns
+            ORDER BY amount_raised DESC
+            LIMIT 1
+        ");
+        return $stmt->fetch();
+    }
+
+    /**
+     * Get aggregate totals across all campaigns (for reports)
+     */
+    public function getAggregateStats() {
+        $stmt = $this->pdo->query("
+            SELECT
+                COALESCE(AVG(amount_raised), 0) as avg_raised,
+                COALESCE(SUM(goal_amount), 0) as total_goal,
+                COALESCE(SUM(amount_raised), 0) as total_raised
+            FROM campaigns
+        ");
+        return $stmt->fetch();
+    }
+
+    /**
      * Get campaigns requiring attention (under 70% funded)
      */
     public function getCampaignsNeedingAttention($limit = 5) {

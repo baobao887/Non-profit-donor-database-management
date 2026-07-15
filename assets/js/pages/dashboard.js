@@ -4,7 +4,7 @@ import { initLayout } from '../layout.js';
 import { initCharts, updateDashboardCharts } from '../charts.js';
 
 async function init() {
-  initLayout({ showSearch: true, showTheme: true });
+  initLayout({ showSearch: true });
   initCharts();
 
   try {
@@ -14,6 +14,9 @@ async function init() {
     renderTopDonors(stats.topDonors);
     renderCampaignProgress(stats.campaignsNeedingAttention);
     updateDashboardCharts(mapDonationsForChart(stats.recentDonations));
+
+    const breakdown = await apiGet('api/donations.php', { action: 'breakdown' });
+    renderDonationPieChart(breakdown);
   } catch (err) {
     console.error('Dashboard load failed:', err);
     renderError(document.getElementById('recent-donations-body')?.closest('table')?.parentElement,
@@ -77,6 +80,19 @@ function renderCampaignProgress(campaigns = []) {
       </div>
       <div class="flex items-center gap-3"><div class="h-3 flex-1 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r ${color}" style="width:${pct}%"></div></div><span class="text-sm font-semibold text-slate-600">${pct}%</span></div>`;
   }).join('') : '<p class="text-slate-500">No live campaign alerts right now.</p>';
+}
+
+// Real per-campaign donation split — replaces the old hardcoded
+// Recurring/One-time/Corporate/Events demo categories, which had no
+// corresponding column in the donations table.
+function renderDonationPieChart(breakdown = []) {
+  if (typeof Chart === 'undefined') return;
+  const chart = Chart.getChart('pieChart');
+  if (!chart) return;
+  const withDonations = breakdown.filter((b) => Number(b.total) > 0);
+  chart.data.labels = withDonations.map((b) => b.campaign_name);
+  chart.data.datasets[0].data = withDonations.map((b) => Number(b.total));
+  chart.update();
 }
 
 // charts.js expects [{ date, amount, status }] — map the API's donation_date/payment_status fields

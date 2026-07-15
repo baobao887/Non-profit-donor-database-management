@@ -38,12 +38,12 @@
         <form id="loginForm" class="mt-8 space-y-5">
           <div class="form-field">
             <label for="email">Work email</label>
-            <input type="email" id="email" class="input-glass" value="avery@donortrack.org" required />
+            <input type="email" id="email" class="input-glass" required />
           </div>
           <div class="form-field">
             <label for="password">Password</label>
             <div class="relative">
-              <input type="password" id="password" class="input-glass pr-12" value="password" required />
+              <input type="password" id="password" class="input-glass pr-12" required />
               <button type="button" id="togglePassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
                 <i class="fa-solid fa-eye"></i>
               </button>
@@ -51,10 +51,6 @@
           </div>
           <button type="submit" class="w-full btn-primary py-3 rounded-2xl">Sign in</button>
         </form>
-
-        <div class="mt-6 text-center text-sm text-slate-500">
-          Demo credentials pre-filled • Check browser console for API responses
-        </div>
       </div>
     </section>
 </main>

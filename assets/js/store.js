@@ -262,6 +262,17 @@ export async function getDonations(page = 1) {
   }
 }
 
+export async function getDonationsByDonor(donorId) {
+  try {
+    const res = await fetch(`api/donations.php?action=by-donor&donor_id=${donorId}`);
+    if (!res.ok) throw new Error('Failed to fetch donor donations');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donor donations:', error);
+    return [];
+  }
+}
+
 export async function getRecentDonations(limit = 10) {
   try {
     const res = await fetch(`api/donations.php?action=recent&limit=${limit}`);
@@ -291,6 +302,28 @@ export async function getDonationBreakdown() {
     return await res.json();
   } catch (error) {
     console.error('Error fetching donation breakdown:', error);
+    return [];
+  }
+}
+
+export async function getPaymentMethodBreakdown() {
+  try {
+    const res = await fetch('api/donations.php?action=payment-breakdown');
+    if (!res.ok) throw new Error('Failed to fetch payment breakdown');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching payment breakdown:', error);
+    return [];
+  }
+}
+
+export async function getWeekdayRevenue() {
+  try {
+    const res = await fetch('api/donations.php?action=weekday-revenue');
+    if (!res.ok) throw new Error('Failed to fetch weekday revenue');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching weekday revenue:', error);
     return [];
   }
 }
@@ -342,6 +375,17 @@ export async function getCommunications(page = 1) {
   }
 }
 
+export async function getCommunicationsByDonor(donorId) {
+  try {
+    const res = await fetch(`api/communications.php?action=by-donor&donor_id=${donorId}`);
+    if (!res.ok) throw new Error('Failed to fetch donor communications');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching donor communications:', error);
+    return [];
+  }
+}
+
 export async function addCommunication(entry) {
   try {
     const res = await fetch('api/communications.php?action=create', {
@@ -362,7 +406,64 @@ export async function addCommunication(entry) {
  * Staff Functions
  */
 export async function getStaff() {
-  return [];
+  try {
+    const res = await fetch('api/staff.php?action=list');
+    if (!res.ok) throw new Error('Failed to fetch staff');
+    const data = await res.json();
+    cache.staff = data.staff || [];
+    return cache.staff;
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    return [];
+  }
+}
+
+export async function addStaff(member) {
+  try {
+    const res = await fetch('api/staff.php?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(member)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add staff member');
+    return data.user_id;
+  } catch (error) {
+    console.error('Error adding staff member:', error);
+    throw error;
+  }
+}
+
+export async function updateStaff(id, updates) {
+  try {
+    const res = await fetch('api/staff.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: id, ...updates })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update staff member');
+    return true;
+  } catch (error) {
+    console.error('Error updating staff member:', error);
+    throw error;
+  }
+}
+
+export async function deleteStaff(id) {
+  try {
+    const res = await fetch('api/staff.php?action=delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to remove staff member');
+    return true;
+  } catch (error) {
+    console.error('Error removing staff member:', error);
+    throw error;
+  }
 }
 
 /**

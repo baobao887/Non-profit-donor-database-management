@@ -123,7 +123,9 @@ class Donation {
     public function create($donorId, $campaignId, $amount, $donationDate, $paymentMethod) {
         try {
             // Check if campaign is live
-            $campaign = $this->pdo->query("SELECT status FROM campaigns WHERE campaign_id = $campaignId")->fetch();
+            $stmt = $this->pdo->prepare("SELECT status FROM campaigns WHERE campaign_id = ?");
+            $stmt->execute([$campaignId]);
+            $campaign = $stmt->fetch();
             if ($campaign['status'] !== CAMPAIGN_STATUS_LIVE && $campaign['status'] !== CAMPAIGN_STATUS_PAUSED) {
                 throw new Exception('Campaign must be Live or Paused to accept donations');
             }
@@ -232,6 +234,32 @@ class Donation {
         return $stmt->fetchAll();
     }
     
+    /**
+     * Get donation counts grouped by payment method
+     */
+    public function getPaymentMethodBreakdown() {
+        $stmt = $this->pdo->query("
+            SELECT payment_method, COUNT(*) as count
+            FROM donations
+            GROUP BY payment_method
+            ORDER BY count DESC
+        ");
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get total donation amount grouped by day of week (1=Sunday..7=Saturday)
+     */
+    public function getWeekdayRevenue() {
+        $stmt = $this->pdo->query("
+            SELECT DAYOFWEEK(donation_date) as dow, SUM(amount) as total, COUNT(*) as count
+            FROM donations
+            GROUP BY DAYOFWEEK(donation_date)
+            ORDER BY dow
+        ");
+        return $stmt->fetchAll();
+    }
+
     /**
      * Get donation breakdown by campaign
      */

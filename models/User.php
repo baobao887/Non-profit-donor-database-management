@@ -82,13 +82,13 @@ class User {
     /**
      * Update user
      */
-    public function update($userId, $firstName, $lastName, $role, $status) {
+    public function update($userId, $firstName, $lastName, $email, $role, $status) {
         $stmt = $this->pdo->prepare("
             UPDATE users
-            SET first_name = ?, last_name = ?, role = ?, status = ?, updated_at = NOW()
+            SET first_name = ?, last_name = ?, email = ?, role = ?, status = ?, updated_at = NOW()
             WHERE user_id = ?
         ");
-        return $stmt->execute([$firstName, $lastName, $role, $status, $userId]);
+        return $stmt->execute([$firstName, $lastName, $email, $role, $status, $userId]);
     }
     
     /**

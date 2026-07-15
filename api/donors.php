@@ -76,21 +76,22 @@ try {
             $email = trim($data['email'] ?? '');
             $phone = trim($data['phone'] ?? '');
             $address = trim($data['address'] ?? '');
-            
+            $notes = trim($data['notes'] ?? '');
+
             // Validate
             if (empty($firstName) || empty($lastName)) {
                 throw new Exception('First and last name are required');
             }
-            
+
             if (!empty($email) && !validateEmail($email)) {
                 throw new Exception('Invalid email format');
             }
-            
+
             if (!empty($phone) && !validatePhone($phone)) {
                 throw new Exception('Invalid phone format');
             }
-            
-            $donorId = $donorModel->create($firstName, $lastName, $email, $phone, $address);
+
+            $donorId = $donorModel->create($firstName, $lastName, $email, $phone, $address, $notes);
             
             logActivity(getCurrentUserId(), 'create', "Created donor: $firstName $lastName", 'donor', $donorId);
             
@@ -127,12 +128,13 @@ try {
             $phone = trim($data['phone'] ?? $donor['phone']);
             $address = trim($data['address'] ?? $donor['address']);
             $status = $data['status'] ?? $donor['status'];
-            
+            $notes = trim($data['notes'] ?? $donor['notes']);
+
             if (!empty($email) && !validateEmail($email)) {
                 throw new Exception('Invalid email format');
             }
-            
-            $donorModel->update($donorId, $firstName, $lastName, $email, $phone, $address, $status);
+
+            $donorModel->update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes);
             
             logActivity(getCurrentUserId(), 'update', "Updated donor: $firstName $lastName", 'donor', $donorId);
             

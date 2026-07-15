@@ -91,13 +91,26 @@ class Donor {
     }
     
     /**
+     * Get donor counts grouped by rank (for donor distribution charts)
+     */
+    public function getRankBreakdown() {
+        $stmt = $this->pdo->query("
+            SELECT donor_rank, COUNT(*) as count
+            FROM donors
+            WHERE status = 'Active'
+            GROUP BY donor_rank
+        ");
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Create donor
      */
-    public function create($firstName, $lastName, $email, $phone, $address) {
+    public function create($firstName, $lastName, $email, $phone, $address, $notes = '') {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO donors (first_name, last_name, email, phone, address, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
+                INSERT INTO donors (first_name, last_name, email, phone, address, notes, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             $stmt->execute([
                 $firstName,
@@ -105,6 +118,7 @@ class Donor {
                 $email,
                 $phone,
                 $address,
+                $notes,
                 DONOR_STATUS_ACTIVE
             ]);
             return $this->pdo->lastInsertId();
@@ -112,17 +126,17 @@ class Donor {
             throw $e;
         }
     }
-    
+
     /**
      * Update donor
      */
-    public function update($donorId, $firstName, $lastName, $email, $phone, $address, $status) {
+    public function update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes = null) {
         $stmt = $this->pdo->prepare("
             UPDATE donors
-            SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, status = ?, updated_at = NOW()
+            SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, status = ?, notes = ?, updated_at = NOW()
             WHERE donor_id = ?
         ");
-        return $stmt->execute([$firstName, $lastName, $email, $phone, $address, $status, $donorId]);
+        return $stmt->execute([$firstName, $lastName, $email, $phone, $address, $status, $notes, $donorId]);
     }
     
     /**

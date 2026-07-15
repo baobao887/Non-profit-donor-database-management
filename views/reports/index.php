@@ -50,13 +50,15 @@ if (!checkSession()) {
           </div>
         </div>
         <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <h3 class="text-xl font-semibold mb-5">Activity heatmap</h3>
+          <h3 class="text-xl font-semibold mb-5">Donation activity by weekday</h3>
           <div class="grid grid-cols-5 gap-2 text-[11px] text-slate-500 mb-4">
             <span class="text-center">Mon</span><span class="text-center">Tue</span><span class="text-center">Wed</span><span class="text-center">Thu</span><span class="text-center">Fri</span>
           </div>
-          <div class="grid grid-cols-5 gap-2">
-            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div>
-            <div class="h-14 rounded-3xl bg-slate-100"></div><div class="h-14 rounded-3xl bg-slate-200"></div><div class="h-14 rounded-3xl bg-slate-300"></div><div class="h-14 rounded-3xl bg-slate-400"></div><div class="h-14 rounded-3xl bg-slate-500"></div>
+          <div class="grid grid-cols-5 gap-2 mb-2" id="activity-heatmap-count" title="Donations logged">
+            <div class="h-14 rounded-3xl bg-slate-100" data-weekday="Mon"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Tue"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Wed"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Thu"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Fri"></div>
+          </div>
+          <div class="grid grid-cols-5 gap-2" id="activity-heatmap-revenue" title="Revenue raised">
+            <div class="h-14 rounded-3xl bg-slate-100" data-weekday="Mon"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Tue"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Wed"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Thu"></div><div class="h-14 rounded-3xl bg-slate-100" data-weekday="Fri"></div>
           </div>
         </div>
       </section>
