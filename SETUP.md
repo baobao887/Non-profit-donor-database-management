@@ -22,8 +22,8 @@ This document provides step-by-step instructions to set up the PHP/MySQL backend
    ```
 
 3. **Import the schema:**
-   - In phpMyAdmin: Select the `donortrack` database → Import → Choose `database.sql` file
-   - Via MySQL CLI: `mysql -u root -p donortrack < database.sql`
+   - In phpMyAdmin: Select the `donortrack` database → Import → Choose `database/database.sql` file
+   - Via MySQL CLI: `mysql -u root -p donortrack < database/database.sql`
 
 4. **Verify tables created:**
    ```sql
@@ -77,41 +77,61 @@ Use the demo credentials:
 ```
 donortrack/
 ├── config/
+│   ├── paths.php             # Path/URL constants
 │   ├── database.php          # Database connection
 │   └── constants.php         # Application constants
 ├── includes/
-│   ├── auth.php             # Authentication functions
-│   ├── functions.php        # Helper functions
-│   ├── header.php           # (To be created)
-│   └── footer.php           # (To be created)
+│   ├── auth.php              # Authentication + session functions
+│   ├── functions.php         # Helper functions
+│   ├── header.php            # Shared <head> / page shell
+│   ├── navbar.php            # Top navbar component
+│   ├── sidebar.php           # Sidebar shell (nav links rendered by layout.js)
+│   └── footer.php            # Shared closing markup
 ├── models/
-│   ├── User.php             # User model
-│   ├── Donor.php            # Donor model
-│   ├── Campaign.php         # Campaign model
-│   ├── Donation.php         # Donation model
-│   └── Communication.php    # Communication model
+│   ├── User.php               # User/staff model
+│   ├── Donor.php               # Donor model
+│   ├── Campaign.php           # Campaign model
+│   ├── Donation.php           # Donation model
+│   └── Communication.php      # Communication model
+├── views/
+│   ├── auth/login.php         # Login form
+│   ├── dashboard/index.php    # Dashboard
+│   ├── donors/index.php       # Donor directory
+│   ├── donors/profile.php     # Donor profile
+│   ├── campaigns/index.php    # Campaign showcase
+│   ├── campaigns/detail.php   # Campaign detail
+│   ├── donations/index.php    # Donation history
+│   ├── communications/index.php # Donor conversations
+│   ├── staff/index.php        # Staff directory
+│   └── reports/index.php      # Analytics/reports
 ├── api/
 │   ├── check-session.php    # Session validation
 │   ├── dashboard.php        # Dashboard statistics
 │   ├── donors.php           # Donors CRUD
 │   ├── campaigns.php        # Campaigns CRUD
 │   ├── donations.php        # Donations CRUD
-│   └── communications.php   # Communications CRUD
+│   ├── communications.php   # Communications CRUD
+│   ├── staff.php            # Staff CRUD (Admin only for writes)
+│   └── reports.php          # Report aggregates
 ├── assets/
 │   ├── css/
 │   │   └── style.css        # Styling
-│   ├── js/
-│   │   ├── store.js         # Data store (to be updated)
-│   │   ├── charts.js        # Charts (to be updated)
-│   │   └── pages/           # Page scripts (to be updated)
-│   └── data/
-│       └── seed.json        # (Deprecated - use database)
-├── login.php                # Login page (new)
-├── logout.php               # Logout endpoint
-├── login-handler.php        # Login handler API
-├── database.sql             # Database schema
-├── [HTML Pages]             # To be converted to PHP
-└── SETUP.md                 # This file
+│   └── js/
+│       ├── store.js         # Data-fetching layer (entity CRUD)
+│       ├── api.js           # Shared fetch wrapper
+│       ├── charts.js        # Chart.js setup
+│       ├── layout.js        # Sidebar/topbar rendering
+│       ├── utils.js         # Formatting helpers
+│       └── pages/           # One script per page
+├── database/
+│   └── database.sql         # Database schema + seed data
+├── login.php                 # Login router
+├── logout.php                # Logout endpoint
+├── login-handler.php         # Login handler API
+├── index.php, dashboard.php, donors.php, campaigns.php,
+│   donations.php, communications.php, staff.php, reports.php,
+│   donor-profile.php, campaign-detail.php  # Root routers (auth-gate → view)
+└── SETUP.md                  # This file
 ```
 
 ---
@@ -332,6 +352,33 @@ All API endpoints require authentication (valid session). Responses are in JSON 
 
 ---
 
+### Staff API
+
+**Get all staff:**
+- **GET** `/api/staff.php?action=list`
+
+**Create staff member (Admin only):**
+- **POST** `/api/staff.php?action=create`
+- **Body:** `{ name, email, role }` (role must be `Admin` or `Staff`)
+
+**Update staff member (Admin only):**
+- **PUT** `/api/staff.php?action=update`
+- **Body:** `{ user_id, name, email, role }`
+
+**Remove staff member (Admin only):**
+- **DELETE** `/api/staff.php?action=delete`
+- **Body:** `{ user_id }`
+
+---
+
+### Reports API
+
+**Get report aggregates:**
+- **GET** `/api/reports.php`
+- **Response:** `{ topCampaign, avgRaised, conversionPct, donationTrend, campaignBreakdown, paymentBreakdown, weekdayActivity, donorRankBreakdown }`
+
+---
+
 ## Database Schema
 
 ### Users Table
@@ -400,56 +447,18 @@ created_at, updated_at
 ## What's Completed
 
 ✅ Database schema with normalized tables
-✅ User authentication system
-✅ Session management
-✅ All CRUD APIs
+✅ User authentication system, session management, logout
+✅ All CRUD APIs, incl. Staff and Reports
 ✅ Data models
 ✅ Helper functions
 ✅ Security measures (PDO, password hashing, session validation)
 ✅ Activity logging system
-✅ Login/logout functionality
+✅ All pages converted from the original static HTML prototype to PHP views backed by live data
+✅ Profile dropdown with logout in the navbar
 
----
-
-## What Remains to Be Done
-
-The following need to be updated to use the new PHP APIs:
-
-1. **Frontend Pages → PHP:**
-   - Convert `index.html` → dynamic dashboard pulling from `/api/dashboard.php`
-   - Convert `donors.html` → PHP page using `/api/donors.php`
-   - Convert `campaigns.html` → PHP page using `/api/campaigns.php`
-   - Convert `donations.html` → PHP page using `/api/donations.php`
-   - Convert `communications.html` → PHP page using `/api/communications.php`
-   - Convert `reports.html` → PHP page with analytics
-   - Convert `donor-profile.html` → PHP detail page
-   - Convert `campaign-detail.html` → PHP detail page
-
-2. **JavaScript Updates:**
-   - Update `assets/js/store.js` to use APIs instead of localStorage
-   - Update `assets/js/charts.js` to pull data from `/api/donations.php?action=trend`
-   - Update page scripts to make AJAX calls to APIs
-   - Implement session checking before loading pages
-
-3. **Frontend Templates:**
-   - Create `includes/header.php` (navigation with logout)
-   - Create `includes/footer.php`
-   - Create wrapper for all pages
-
-4. **User Management Page** (Admin only):
-   - List staff members
-   - Create/edit users
-   - Manage roles and permissions
-
-5. **Reports Page:**
-   - Generate reports from database
-   - Implement various report types
-   - Export functionality
-
-6. **Form Handling:**
-   - Implement CSRF protection
-   - Form submission handling
-   - Error messages
+The legacy static HTML prototype pages (`donors.html`, `campaigns.html`, etc.) have been removed —
+every page now has a PHP router at the project root that gates on `checkSession()` and renders a
+template from `views/`.
 
 ---
 
@@ -500,21 +509,18 @@ curl -X GET "http://localhost/donortrack/api/dashboard.php" \
 
 ## Next Steps
 
-1. **Set up database** using the SQL schema
-2. **Test login** with demo credentials
-3. **Update frontend pages** to use APIs
-4. **Implement form handling** for CRUD operations
-5. **Add user management** interface
-6. **Create reports** functionality
+1. **Set up the database** using `database/database.sql`
+2. **Test login** with the demo credentials above
+3. **Explore the app** — dashboard, donors, campaigns, donations, communications, staff, reports
 
 ---
 
 ## Support
 
 For API questions, refer to the endpoint documentation above.
-For database structure questions, check the schema comments in `database.sql`.
+For database structure questions, check the schema comments in `database/database.sql`.
 For authentication issues, review `includes/auth.php`.
 
 ---
 
-**Status:** Core backend complete | Frontend conversion in progress
+**Status:** Complete — all pages are PHP views backed by live MySQL data.

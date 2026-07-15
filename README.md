@@ -2,7 +2,7 @@
 
 A comprehensive web application for managing donors, campaigns, and donations for non-profit organizations.
 
-**Status:** Backend implementation complete ✅ | Frontend conversion in progress 🔄
+**Status:** Complete ✅ — PHP/MySQL backend with all pages converted from the original static prototype
 
 ## Overview
 
@@ -188,8 +188,8 @@ The application is web-based and accessible through common web browsers.
 
 Technology stack:
 
-Frontend: HTML, CSS, JavaScript, Bootstrap
-Backend: PHP
+Frontend: PHP-rendered HTML, Tailwind CSS, vanilla JavaScript (ES modules)
+Backend: PHP (PDO)
 Database: MySQL
 
 The interface is designed to be simple enough for non-technical staff while remaining responsive across desktops, laptops, and tablets.
