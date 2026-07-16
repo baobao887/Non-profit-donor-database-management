@@ -151,6 +151,7 @@ try {
     // DELETE requests
     elseif ($method === 'DELETE') {
         if ($action === 'archive') {
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             $donorId = (int)($data['donor_id'] ?? 0);
             

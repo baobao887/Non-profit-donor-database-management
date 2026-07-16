@@ -44,6 +44,7 @@ export function statusBadgeClass(status) {
     Active: 'bg-emerald-100 text-emerald-700', Succeeded: 'bg-emerald-100 text-emerald-700', Sent: 'bg-emerald-100 text-emerald-700', Live: 'bg-emerald-100 text-emerald-700',
     Pending: 'bg-amber-100 text-amber-700', Processing: 'bg-amber-100 text-amber-700', 'In review': 'bg-sky-100 text-sky-700',
     Inactive: 'bg-slate-100 text-slate-700', Refund: 'bg-rose-100 text-rose-700', Paused: 'bg-amber-100 text-amber-700', Planning: 'bg-sky-100 text-sky-700',
+    Completed: 'bg-violet-100 text-violet-700', Archived: 'bg-slate-100 text-slate-700',
   };
   return map[status] || 'bg-slate-100 text-slate-700';
 }

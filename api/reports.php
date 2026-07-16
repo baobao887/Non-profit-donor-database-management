@@ -20,6 +20,8 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+requireApiRole(ROLE_ADMIN);
+
 try {
     $pdo = getDB();
     $campaignModel = new Campaign($pdo);

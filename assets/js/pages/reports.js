@@ -1,11 +1,13 @@
 import { initStore } from '../store.js';
 import { apiGet, renderError } from '../api.js';
-import { formatCurrency } from '../utils.js';
+import { formatCurrency, exportCsv } from '../utils.js';
 import { initLayout } from '../layout.js';
 import { initCharts } from '../charts.js';
 
 const HEATMAP_ORDER = [2, 3, 4, 5, 6]; // Mon..Fri, MySQL DAYOFWEEK numbering
 const HEATMAP_SHADES = ['bg-slate-100', 'bg-slate-200', 'bg-slate-300', 'bg-slate-400', 'bg-slate-500'];
+
+let lastReport = null;
 
 async function init() {
   await initStore();
@@ -14,6 +16,7 @@ async function init() {
 
   try {
     const report = await apiGet('api/reports.php');
+    lastReport = report;
     renderCampaignStats(report);
     renderTrendChart(report.donationTrend);
     renderDonorPieChart(report.donorRankBreakdown);
@@ -24,7 +27,20 @@ async function init() {
     renderError(document.getElementById('payment-breakdown'), 'Could not load report data.');
   }
 
-  document.getElementById('exportReport')?.addEventListener('click', () => window.print());
+  document.getElementById('printReport')?.addEventListener('click', () => window.print());
+  document.getElementById('exportCsvReport')?.addEventListener('click', exportReportCsv);
+}
+
+function exportReportCsv() {
+  const trend = lastReport?.donationTrend || [];
+  if (!trend.length) {
+    alert('No report data to export yet.');
+    return;
+  }
+  exportCsv('revenue-report.csv', trend, [
+    { label: 'Month', value: (t) => t.month },
+    { label: 'Revenue (PHP)', value: (t) => formatCurrency(t.total) },
+  ]);
 }
 
 function renderCampaignStats(report) {

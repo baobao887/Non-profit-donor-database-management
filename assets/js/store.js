@@ -231,6 +231,22 @@ export async function updateCampaign(id, updates) {
   }
 }
 
+export async function deleteCampaign(id) {
+  try {
+    const res = await fetch('api/campaigns.php?action=archive', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete campaign');
+    return true;
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
+    throw error;
+  }
+}
+
 export async function updateCampaignStatus(id, status) {
   try {
     const res = await fetch('api/campaigns.php?action=update-status', {
@@ -368,10 +384,10 @@ export async function getCommunications(page = 1) {
     if (!res.ok) throw new Error('Failed to fetch communications');
     const data = await res.json();
     cache.communications = data.communications || [];
-    return cache.communications;
+    return { communications: cache.communications, total: data.total || 0, page: data.page || page, limit: data.limit || 20 };
   } catch (error) {
     console.error('Error fetching communications:', error);
-    return [];
+    return { communications: [], total: 0, page, limit: 20 };
   }
 }
 
@@ -393,11 +409,43 @@ export async function addCommunication(entry) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
     });
-    if (!res.ok) throw new Error('Failed to create communication');
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create communication');
     return data.communication_id;
   } catch (error) {
     console.error('Error adding communication:', error);
+    throw error;
+  }
+}
+
+export async function updateCommunication(id, updates) {
+  try {
+    const res = await fetch('api/communications.php?action=update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ communication_id: id, ...updates })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update communication');
+    return true;
+  } catch (error) {
+    console.error('Error updating communication:', error);
+    throw error;
+  }
+}
+
+export async function deleteCommunication(id) {
+  try {
+    const res = await fetch('api/communications.php?action=delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ communication_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete communication');
+    return true;
+  } catch (error) {
+    console.error('Error deleting communication:', error);
     throw error;
   }
 }

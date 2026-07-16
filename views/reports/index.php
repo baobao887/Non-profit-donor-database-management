@@ -22,7 +22,10 @@ if (!checkSession()) {
           <p class="text-sm text-slate-500">Reports / Analytics</p>
           <h2 class="text-3xl font-semibold tracking-tight">Impact analytics</h2>
         </div>
-        <button type="button" id="exportReport" class="btn-secondary px-4 py-3 rounded-2xl">Print / Export PDF</button>
+        <div class="flex gap-3">
+          <button type="button" id="exportCsvReport" class="btn-secondary px-4 py-3 rounded-2xl">Export CSV</button>
+          <button type="button" id="printReport" class="btn-secondary px-4 py-3 rounded-2xl">Print</button>
+        </div>
       </header>
       <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] mb-8">
         <div class="card-glass p-6 shadow-xl rounded-[28px]">

@@ -44,18 +44,23 @@ if (!checkSession()) {
   <div id="campaignModal" class="modal">
     <div class="modal-backdrop" data-close-modal="campaignModal"></div>
     <div class="modal-panel" role="dialog">
-      <h3 class="text-xl font-semibold mb-5">New campaign</h3>
+      <h3 id="campaignModalTitle" class="text-xl font-semibold mb-5">New campaign</h3>
       <form id="campaignForm">
+        <input type="hidden" id="campaignId" />
         <div class="form-field"><label for="campaignName">Campaign name</label><input id="campaignName" class="input-glass" required /></div>
         <div class="form-field"><label for="campaignDesc">Description</label><textarea id="campaignDesc" class="input-glass" rows="3" required></textarea></div>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field"><label for="campaignGoal">Goal (₱)</label><input id="campaignGoal" type="number" min="1000" step="0.01" class="input-glass" required /></div>
           <div class="form-field"><label for="campaignStatus">Status</label>
-            <select id="campaignStatus" class="input-glass"><option>Live</option><option>Planning</option><option>Paused</option></select>
+            <select id="campaignStatus" class="input-glass"><option>Planning</option><option>Live</option><option>Paused</option><option>Completed</option><option>Archived</option></select>
           </div>
         </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="campaignStartDate">Start date</label><input id="campaignStartDate" type="date" class="input-glass" required /></div>
+          <div class="form-field"><label for="campaignEndDate">End date</label><input id="campaignEndDate" type="date" class="input-glass" required /></div>
+        </div>
         <div class="flex gap-3 mt-6">
-          <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Create</button>
+          <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
           <button type="button" data-close-modal="campaignModal" class="btn-secondary flex-1 py-3 rounded-2xl">Cancel</button>
         </div>
       </form>

@@ -14,4 +14,6 @@ if (!checkSession()) {
     exit;
 }
 
+requireRole(ROLE_ADMIN);
+
 require_once VIEWS_PATH . 'campaigns/index.php';

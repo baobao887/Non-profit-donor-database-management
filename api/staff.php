@@ -17,18 +17,6 @@ if (!checkSession()) {
 }
 
 /**
- * Admin check that returns JSON instead of redirecting — requireAdmin() in
- * includes/functions.php is built for page routers (it redirects), which
- * breaks the JSON contract this endpoint promises to the frontend.
- */
-function requireApiAdmin() {
-    if (!isAdmin()) {
-        http_response_code(403);
-        die(json_encode(['error' => 'Admin access required']));
-    }
-}
-
-/**
  * Split a single "full name" input into first/last name for storage,
  * since the staff form only collects one Name field.
  */
@@ -46,6 +34,10 @@ try {
 
     // GET requests
     if ($method === 'GET') {
+        // Staff cannot access user management at all, not even read-only -
+        // gate the whole endpoint here rather than per-action below.
+        requireApiRole(ROLE_ADMIN);
+
         if ($action === 'list') {
             $staff = $userModel->getStaff();
             echo json_encode(['staff' => $staff]);
@@ -67,7 +59,7 @@ try {
     // POST requests
     elseif ($method === 'POST') {
         if ($action === 'create') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
 
             [$firstName, $lastName] = splitName($data['name'] ?? '');
@@ -110,7 +102,7 @@ try {
     // PUT requests
     elseif ($method === 'PUT') {
         if ($action === 'update') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             $userId = (int)($data['user_id'] ?? 0);
 
@@ -156,7 +148,7 @@ try {
     // DELETE requests
     elseif ($method === 'DELETE') {
         if ($action === 'delete') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             $userId = (int)($data['user_id'] ?? 0);
 

@@ -168,13 +168,15 @@ function requireAuth() {
 }
 
 /**
- * Require admin role
+ * Require the current user to have an exact role for an API endpoint.
+ * Unlike requireRole()/requireAnyRole() in includes/auth.php (which
+ * redirect, for page routers), this returns JSON + 403 - API responses
+ * must stay JSON for the frontend's fetch()-based error handling to work,
+ * and this must never be bypassable via a direct API call.
  */
-function requireAdmin() {
-    requireAuth();
-    if (!isAdmin()) {
-        http_response_code(403);
-        die('Access denied');
+function requireApiRole($role) {
+    if (!isAuthenticated() || ($_SESSION['user']['role'] ?? null) !== $role) {
+        errorResponse('Access denied', 403);
     }
 }
 

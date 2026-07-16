@@ -4,7 +4,9 @@
     <!-- Left Section -->
     <section class="hidden lg:flex bg-gradient-to-br from-sky-600 to-indigo-800 text-white p-16 flex-col justify-between">
       <div class="flex items-center gap-3">
-        <span class="w-12 h-12 rounded-3xl bg-white/15 flex items-center justify-center text-xl font-semibold">D</span>
+        <span class="w-12 h-12 rounded-3xl bg-white/15 flex items-center justify-center p-1.5">
+          <img src="<?php echo ASSET_URL; ?>images/logo.png" alt="DonorTrack" class="w-full h-full object-contain" />
+        </span>
         <span class="text-xl font-semibold">DonorTrack</span>
       </div>
       <div>
@@ -19,7 +21,7 @@
     <section class="flex items-center justify-center p-6">
       <div class="w-full max-w-md">
         <div class="lg:hidden flex items-center gap-3 mb-10 text-sky-700">
-          <span class="w-11 h-11 rounded-3xl bg-sky-600 text-white flex items-center justify-center font-semibold">D</span>
+          <img src="<?php echo ASSET_URL; ?>images/logo.png" alt="DonorTrack" class="w-11 h-11 object-contain" />
           <b>DonorTrack</b>
         </div>
         

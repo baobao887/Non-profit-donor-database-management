@@ -3,11 +3,11 @@ import { initials } from './utils.js';
 const NAV_ITEMS = [
   { href: 'dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
   { href: 'donors.php', icon: 'fa-user-group', label: 'Donors' },
-  { href: 'campaigns.php', icon: 'fa-bullhorn', label: 'Campaigns' },
+  { href: 'campaigns.php', icon: 'fa-bullhorn', label: 'Campaigns', roles: ['Admin'] },
   { href: 'donations.php', icon: 'fa-hand-holding-dollar', label: 'Donations' },
   { href: 'communications.php', icon: 'fa-comments', label: 'Communications' },
-  { href: 'staff.php', icon: 'fa-users-gear', label: 'Staff' },
-  { href: 'reports.php', icon: 'fa-chart-pie', label: 'Reports' },
+  { href: 'staff.php', icon: 'fa-users-gear', label: 'Staff', roles: ['Admin'] },
+  { href: 'reports.php', icon: 'fa-chart-pie', label: 'Reports', roles: ['Admin'] },
 ];
 
 function currentPage() {
@@ -26,15 +26,17 @@ function navLink(item, active) {
   </a>`;
 }
 
-export function renderSidebar() {
-  // The PHP includes/sidebar.php already renders the button, overlay, logo,
-  // and panel shell server-side. We only need to fill the empty <nav id="sidebar-nav">
-  // with the link list — not rebuild the whole sidebar.
+// Sidebar links are filtered by role here, but this is UX only - every
+// page/API this points to independently enforces its own access control
+// server-side (requireRole()/requireApiRole()), so this filtering can
+// never be the only thing standing between a role and a restricted page.
+export function renderSidebar(role) {
   const nav = document.getElementById('sidebar-nav');
   if (!nav) return;
 
   const page = currentPage();
-  nav.innerHTML = NAV_ITEMS.map((item) => navLink(item, item.href === page)).join('');
+  const items = NAV_ITEMS.filter((item) => !item.roles || !role || item.roles.includes(role));
+  nav.innerHTML = items.map((item) => navLink(item, item.href === page)).join('');
 
   const btn = document.getElementById('mobileMenuBtn');
   const overlay = document.getElementById('sidebarOverlay');
@@ -91,8 +93,6 @@ export function renderTopBar(options = {}) {
       </div>
     </div>`;
 
-  loadCurrentUser();
-
  document.getElementById('globalSearch')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const q = e.target.value.trim();
@@ -134,27 +134,43 @@ function closeProfileMenu() {
   toggleProfileMenu(false);
 }
 
-// Fills in the profile pill with the actual logged-in user's name (from the
-// PHP session, via the users table) instead of a hardcoded placeholder.
-async function loadCurrentUser() {
+// Fetches the logged-in user (name/role) from the PHP session via the same
+// endpoint store.js uses elsewhere. Kept self-contained here so layout.js
+// works correctly even on pages (like dashboard.js) that don't call
+// store.js's initStore().
+async function fetchCurrentUser() {
   try {
     const res = await fetch('api/check-session.php');
-    if (!res.ok) return;
+    if (!res.ok) return null;
     const data = await res.json();
-    if (!data.authenticated || !data.user) return;
-    const name = `${data.user.first_name} ${data.user.last_name}`.trim();
-    document.getElementById('profileAvatar')?.replaceChildren(document.createTextNode(initials(name)));
-    document.getElementById('profileName')?.replaceChildren(document.createTextNode(name));
-    document.getElementById('profileMenuName')?.replaceChildren(document.createTextNode(name));
-    document.getElementById('profileMenuRole')?.replaceChildren(document.createTextNode(data.user.role || ''));
+    return data.authenticated ? data.user : null;
   } catch (error) {
     console.error('Error loading current user:', error);
+    return null;
   }
 }
 
-export function initLayout(options = {}) {
-  renderSidebar();
+function renderProfile(user) {
+  if (!user) return;
+  const name = `${user.first_name} ${user.last_name}`.trim();
+  document.getElementById('profileAvatar')?.replaceChildren(document.createTextNode(initials(name)));
+  document.getElementById('profileName')?.replaceChildren(document.createTextNode(name));
+  document.getElementById('profileMenuName')?.replaceChildren(document.createTextNode(name));
+  document.getElementById('profileMenuRole')?.replaceChildren(document.createTextNode(user.role || ''));
+}
+
+/**
+ * Initializes the sidebar and topbar, and returns the current user (with
+ * role) so page scripts can make their own role-based decisions - e.g.
+ * hiding a Delete button that only Admins are allowed to use. This is a
+ * UX convenience only; the real enforcement is server-side.
+ */
+export async function initLayout(options = {}) {
+  const user = await fetchCurrentUser();
+  renderSidebar(user?.role);
   if (document.getElementById('topbar-root')) {
     renderTopBar(options);
+    renderProfile(user);
   }
+  return user;
 }

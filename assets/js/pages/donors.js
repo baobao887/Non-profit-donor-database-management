@@ -6,10 +6,12 @@ const PAGE_SIZE = 10;
 let allDonors = [];
 let filtered = [];
 let page = 1;
+let isAdmin = false;
 
 async function init() {
   await initStore();
-  initLayout({ showSearch: false });
+  const user = await initLayout({ showSearch: false });
+  isAdmin = user?.role === 'Admin';
   bindModalClose();
 
   const params = new URLSearchParams(location.search);
@@ -101,7 +103,7 @@ function render() {
         <div class="flex gap-2">
           <a class="btn-primary-outline btn-sm" href="donor-profile.php?id=${d.donor_id}">View</a>
           <button type="button" class="btn-primary-outline btn-sm" data-edit="${d.donor_id}">Edit</button>
-          <button type="button" class="btn-danger-outline btn-sm" data-delete="${d.donor_id}">Delete</button>
+          ${isAdmin ? `<button type="button" class="btn-danger-outline btn-sm" data-delete="${d.donor_id}">Delete</button>` : ''}
         </div>
       </td>
     </tr>`).join('') : `<tr><td colspan="8" class="empty-state px-6 py-10 text-center text-slate-500">No donors match your filters.</td></tr>`;

@@ -17,18 +17,6 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
-/**
- * Admin check that returns JSON instead of redirecting — requireAdmin() in
- * includes/functions.php is built for page routers (it redirects), which
- * breaks the JSON contract this endpoint promises to the frontend.
- */
-function requireApiAdmin() {
-    if (!isAdmin()) {
-        http_response_code(403);
-        die(json_encode(['error' => 'Admin access required']));
-    }
-}
-
 try {
     $pdo = getDB();
     $campaignModel = new Campaign($pdo);
@@ -93,7 +81,7 @@ try {
     // POST requests
     elseif ($method === 'POST') {
         if ($action === 'create') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             
             $campaignName = trim($data['campaign_name'] ?? '');
@@ -101,15 +89,23 @@ try {
             $goalAmount = (float)($data['goal_amount'] ?? 0);
             $startDate = $data['start_date'] ?? null;
             $endDate = $data['end_date'] ?? null;
-            
+
             if (empty($campaignName)) {
                 throw new Exception('Campaign name is required');
             }
-            
+
             if ($goalAmount <= 0) {
                 throw new Exception('Goal amount must be greater than 0');
             }
-            
+
+            if (empty($startDate) || empty($endDate)) {
+                throw new Exception('Start date and end date are required');
+            }
+
+            if (strtotime($endDate) < strtotime($startDate)) {
+                throw new Exception('End date cannot be before start date');
+            }
+
             $campaignId = $campaignModel->create($campaignName, $description, $goalAmount, $startDate, $endDate, getCurrentUserId());
             
             logActivity(getCurrentUserId(), 'create', "Created campaign: $campaignName", 'campaign', $campaignId);
@@ -128,7 +124,7 @@ try {
     // PUT requests
     elseif ($method === 'PUT') {
         if ($action === 'update') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             $campaignId = (int)($data['campaign_id'] ?? 0);
             
@@ -148,7 +144,27 @@ try {
             $startDate = $data['start_date'] ?? $campaign['start_date'];
             $endDate = $data['end_date'] ?? $campaign['end_date'];
             $status = $data['status'] ?? $campaign['status'];
-            
+
+            if (empty($campaignName)) {
+                throw new Exception('Campaign name is required');
+            }
+
+            if ($goalAmount <= 0) {
+                throw new Exception('Goal amount must be greater than 0');
+            }
+
+            if (empty($startDate) || empty($endDate)) {
+                throw new Exception('Start date and end date are required');
+            }
+
+            if (strtotime($endDate) < strtotime($startDate)) {
+                throw new Exception('End date cannot be before start date');
+            }
+
+            if (!in_array($status, CAMPAIGN_STATUSES)) {
+                throw new Exception('Invalid campaign status');
+            }
+
             $campaignModel->update($campaignId, $campaignName, $description, $goalAmount, $startDate, $endDate, $status);
             
             logActivity(getCurrentUserId(), 'update', "Updated campaign: $campaignName", 'campaign', $campaignId);
@@ -159,7 +175,7 @@ try {
             ]);
         }
         elseif ($action === 'update-status') {
-            requireApiAdmin();
+            requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
             $campaignId = (int)($data['campaign_id'] ?? 0);
             $status = $data['status'] ?? null;
@@ -180,6 +196,37 @@ try {
             echo json_encode([
                 'success' => true,
                 'message' => 'Campaign status updated successfully'
+            ]);
+        }
+        else {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid action']);
+        }
+    }
+    // DELETE requests
+    elseif ($method === 'DELETE') {
+        if ($action === 'archive') {
+            requireApiRole(ROLE_ADMIN);
+            $data = json_decode(file_get_contents('php://input'), true);
+            $campaignId = (int)($data['campaign_id'] ?? 0);
+
+            if (!$campaignId) {
+                throw new Exception('Campaign ID required');
+            }
+
+            $campaign = $campaignModel->getById($campaignId);
+            if (!$campaign) {
+                http_response_code(404);
+                throw new Exception('Campaign not found');
+            }
+
+            $campaignModel->archive($campaignId);
+
+            logActivity(getCurrentUserId(), 'archive', "Archived campaign: {$campaign['campaign_name']}", 'campaign', $campaignId);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Campaign archived successfully'
             ]);
         }
         else {

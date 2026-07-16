@@ -59,10 +59,18 @@ class Campaign {
     }
     
     /**
-     * Get live campaigns count
+     * Get live campaigns count.
+     * A campaign only counts as "currently live" if its status is Live AND
+     * today falls within its start/end date window - a Live campaign whose
+     * end date has passed is expired, not currently active.
      */
     public function getLiveCount() {
-        $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM campaigns WHERE status = 'Live'");
+        $stmt = $this->pdo->query("
+            SELECT COUNT(*) as count FROM campaigns
+            WHERE status = 'Live'
+            AND start_date IS NOT NULL AND end_date IS NOT NULL
+            AND CURDATE() BETWEEN start_date AND end_date
+        ");
         $result = $stmt->fetch();
         return $result['count'];
     }
@@ -84,10 +92,24 @@ class Campaign {
     }
     
     /**
-     * Get live campaigns
+     * Get live campaigns (status Live AND within their start/end date window)
      */
     public function getLive($limit = null) {
-        return $this->getByStatus(CAMPAIGN_STATUS_LIVE, $limit);
+        $query = "
+            SELECT * FROM campaigns
+            WHERE status = 'Live'
+            AND start_date IS NOT NULL AND end_date IS NOT NULL
+            AND CURDATE() BETWEEN start_date AND end_date
+            ORDER BY updated_at DESC
+        ";
+        if ($limit) {
+            $query .= " LIMIT ?";
+            $stmt = $this->pdo->prepare($query);
+            $stmt->execute([$limit]);
+        } else {
+            $stmt = $this->pdo->query($query);
+        }
+        return $stmt->fetchAll();
     }
     
     /**

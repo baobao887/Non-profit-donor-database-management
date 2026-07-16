@@ -3,6 +3,8 @@
  * Authentication Functions
  */
 
+require_once __DIR__ . '/functions.php';
+
 session_start();
 
 /**
@@ -23,6 +25,31 @@ function checkSession() {
     
     $_SESSION['last_activity'] = time();
     return true;
+}
+
+/**
+ * Require the current user to have an exact role, or redirect them away.
+ * For PAGE routers (not API endpoints - those should use requireApiRole(),
+ * which returns JSON instead of redirecting). Redirects to dashboard.php
+ * rather than login.php since the user IS authenticated, just not
+ * authorized to view this particular page.
+ */
+function requireRole($role) {
+    requireAuth();
+    if (($_SESSION['user']['role'] ?? null) !== $role) {
+        redirect('dashboard.php');
+    }
+}
+
+/**
+ * Require the current user to have one of several roles, or redirect them
+ * away. See requireRole() for the single-role case.
+ */
+function requireAnyRole($roles) {
+    requireAuth();
+    if (!in_array($_SESSION['user']['role'] ?? null, $roles, true)) {
+        redirect('dashboard.php');
+    }
 }
 
 /**
