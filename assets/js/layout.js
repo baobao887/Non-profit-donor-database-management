@@ -1,4 +1,4 @@
-import { initials } from './utils.js';
+import { initials, openModal, closeModal } from './utils.js';
 
 const NAV_ITEMS = [
   { href: 'dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
@@ -88,6 +88,7 @@ export function renderTopBar(options = {}) {
             <p class="profile-menu-name" id="profileMenuName">…</p>
             <p class="profile-menu-role" id="profileMenuRole">&nbsp;</p>
           </div>
+          <button type="button" id="changePasswordItem" class="profile-menu-item" role="menuitem"><i class="fa-solid fa-key"></i> Change password</button>
           <a href="logout.php" class="profile-menu-logout" role="menuitem"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
         </div>
       </div>
@@ -117,12 +118,97 @@ export function renderTopBar(options = {}) {
     e.stopPropagation();
   });
 
+  document.getElementById('changePasswordItem')?.addEventListener('click', openChangePasswordModal);
+
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.profile-pill-wrap')) closeProfileMenu();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeProfileMenu();
   });
+}
+
+// The change-password modal is injected from here (not the PHP views)
+// because the profile menu exists on every page - this keeps the feature
+// available everywhere without touching each view. Close handlers are
+// bound directly since page scripts run bindModalClose() before this
+// modal exists in the DOM.
+function ensureChangePasswordModal() {
+  if (document.getElementById('changePasswordModal')) return;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div id="changePasswordModal" class="modal">
+      <div class="modal-backdrop" data-close-modal="changePasswordModal"></div>
+      <div class="modal-panel" role="dialog">
+        <h3 class="text-xl font-semibold mb-5">Change password</h3>
+        <form id="changePasswordForm">
+          <div class="form-field"><label for="currentPassword">Current password</label><input id="currentPassword" type="password" class="input-glass" autocomplete="current-password" required /></div>
+          <div class="form-field"><label for="newPassword">New password</label><input id="newPassword" type="password" class="input-glass" minlength="8" autocomplete="new-password" required /></div>
+          <div class="form-field"><label for="confirmNewPassword">Confirm new password</label><input id="confirmNewPassword" type="password" class="input-glass" minlength="8" autocomplete="new-password" required /></div>
+          <p id="changePasswordMessage" class="text-sm mb-2" hidden></p>
+          <div class="flex gap-3 mt-6">
+            <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Update password</button>
+            <button type="button" data-close-modal="changePasswordModal" class="btn-secondary flex-1 py-3 rounded-2xl">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+  document.body.append(wrap.firstElementChild);
+
+  document.querySelectorAll('#changePasswordModal [data-close-modal]').forEach((el) => {
+    el.addEventListener('click', () => closeModal('changePasswordModal'));
+  });
+  document.getElementById('changePasswordForm').addEventListener('submit', submitChangePassword);
+}
+
+function setChangePasswordMessage(text, isSuccess = false) {
+  const el = document.getElementById('changePasswordMessage');
+  if (!el) return;
+  el.hidden = !text;
+  el.textContent = text || '';
+  el.classList.toggle('text-emerald-600', isSuccess);
+  el.classList.toggle('text-rose-600', !isSuccess);
+}
+
+function openChangePasswordModal() {
+  ensureChangePasswordModal();
+  document.getElementById('changePasswordForm').reset();
+  setChangePasswordMessage(null);
+  closeProfileMenu();
+  openModal('changePasswordModal');
+}
+
+async function submitChangePassword(e) {
+  e.preventDefault();
+  const current = document.getElementById('currentPassword').value;
+  const next = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmNewPassword').value;
+
+  if (next !== confirm) {
+    setChangePasswordMessage('New password and confirmation do not match.');
+    return;
+  }
+  if (next.length < 8) {
+    setChangePasswordMessage('New password must be at least 8 characters.');
+    return;
+  }
+
+  try {
+    const res = await fetch('api/account.php?action=change-password', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: current, new_password: next, confirm_password: confirm }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not change password');
+
+    setChangePasswordMessage('Password updated successfully.', true);
+    setTimeout(() => closeModal('changePasswordModal'), 1200);
+  } catch (err) {
+    setChangePasswordMessage(err.message || 'Could not change password.');
+  }
 }
 
 function toggleProfileMenu(open) {

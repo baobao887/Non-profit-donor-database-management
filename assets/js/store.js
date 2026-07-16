@@ -475,7 +475,7 @@ export async function addStaff(member) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to add staff member');
-    return data.user_id;
+    return data;
   } catch (error) {
     console.error('Error adding staff member:', error);
     throw error;

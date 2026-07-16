@@ -129,6 +129,14 @@ function openAddModal() {
   document.getElementById('donorModalTitle').textContent = 'Add donor';
   document.getElementById('donorForm').reset();
   document.getElementById('donorId').value = '';
+  // No level or status control when creating - a donor with zero
+  // donations is Bronze by definition, and Donor::create() always
+  // inserts status Active; neither is a real choice to offer.
+  document.getElementById('donorLevelField').hidden = true;
+  document.getElementById('donorLevelHint').hidden = false;
+  document.getElementById('donorStatusField').hidden = true;
+  document.getElementById('donorStatusHint').hidden = false;
+  document.getElementById('donorRegisteredField').hidden = true;
   openModal('donorModal');
 }
 
@@ -140,9 +148,19 @@ function openEditModal(id) {
   document.getElementById('donorName').value = fullName(d);
   document.getElementById('donorEmail').value = d.email || '';
   document.getElementById('donorPhone').value = d.phone || '';
-  document.getElementById('donorLevel').value = d.donor_rank;
   document.getElementById('donorRole').value = d.notes || '';
   document.getElementById('donorStatus').value = d.status;
+  // Level is shown as a read-only badge - it's derived from donation
+  // totals server-side and would be overwritten on the donor's next gift.
+  document.getElementById('donorLevelField').hidden = false;
+  document.getElementById('donorLevelHint').hidden = true;
+  const badge = document.getElementById('donorLevelBadge');
+  badge.className = `badge ${levelBadgeClass(d.donor_rank)}`;
+  badge.textContent = d.donor_rank;
+  document.getElementById('donorStatusField').hidden = false;
+  document.getElementById('donorStatusHint').hidden = true;
+  document.getElementById('donorRegisteredField').hidden = false;
+  document.getElementById('donorRegistered').textContent = d.created_at ? formatDate(d.created_at) : '—';
   openModal('donorModal');
 }
 
@@ -156,10 +174,14 @@ async function saveDonor(e) {
     email: document.getElementById('donorEmail').value.trim(),
     phone: document.getElementById('donorPhone').value.trim(),
     notes: document.getElementById('donorRole').value.trim(),
-    status: document.getElementById('donorStatus').value,
   };
   try {
-    if (id) await updateDonor(id, data);
+    if (id) {
+      // Status is edit-only: Donor::create() hardcodes Active, so the
+      // create payload doesn't send one.
+      data.status = document.getElementById('donorStatus').value;
+      await updateDonor(id, data);
+    }
     else await addDonor(data);
     closeModal('donorModal');
     allDonors = await getDonors();

@@ -18,7 +18,6 @@ define('USER_STATUS_DISABLED', 'Disabled');
 
 // Donor Status
 define('DONOR_STATUS_ACTIVE', 'Active');
-define('DONOR_STATUS_PENDING', 'Pending');
 define('DONOR_STATUS_INACTIVE', 'Inactive');
 define('DONOR_STATUS_ARCHIVED', 'Archived');
 

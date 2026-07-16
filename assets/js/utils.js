@@ -10,7 +10,15 @@ export function formatCurrency(amount) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
+  let iso = dateStr;
+  if (!iso.includes('T')) {
+    // MySQL DATE ("2026-06-24"): anchor at midday so negative UTC offsets
+    // don't shift the date back a day. MySQL DATETIME/TIMESTAMP
+    // ("2026-06-24 10:30:00"): already has a time, just needs the T.
+    iso = iso.length === 10 ? `${iso}T12:00:00` : iso.replace(' ', 'T');
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 

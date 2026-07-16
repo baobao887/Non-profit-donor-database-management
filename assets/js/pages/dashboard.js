@@ -13,7 +13,9 @@ async function init() {
     renderRecentDonations(stats.recentDonations);
     renderTopDonors(stats.topDonors);
     renderCampaignProgress(stats.campaignsNeedingAttention);
-    updateDashboardCharts(mapDonationsForChart(stats.recentDonations));
+
+    const trend = await apiGet('api/donations.php', { action: 'trend' });
+    updateDashboardCharts(trend);
 
     const breakdown = await apiGet('api/donations.php', { action: 'breakdown' });
     renderDonationPieChart(breakdown);
@@ -93,15 +95,6 @@ function renderDonationPieChart(breakdown = []) {
   chart.data.labels = withDonations.map((b) => b.campaign_name);
   chart.data.datasets[0].data = withDonations.map((b) => Number(b.total));
   chart.update();
-}
-
-// charts.js expects [{ date, amount, status }] — map the API's donation_date/payment_status fields
-function mapDonationsForChart(donations = []) {
-  return donations.map((d) => ({
-    date: d.donation_date,
-    amount: Number(d.amount),
-    status: d.payment_status,
-  }));
 }
 
 function emptyRow(cols, msg) {

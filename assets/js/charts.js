@@ -104,21 +104,29 @@ function chartDoughnutOptions() {
   };
 }
 
-export function updateDashboardCharts(donations) {
+export function updateDashboardCharts(trend) {
   if (typeof Chart === 'undefined') return;
   const line = Chart.getChart('lineChart');
-  if (line && donations.length) {
-    const byMonth = {};
-    donations.forEach((d) => {
-      if (d.status === 'Refund') return;
-      const m = new Date(d.date + 'T12:00:00').toLocaleString('en-US', { month: 'short' });
-      byMonth[m] = (byMonth[m] || 0) + d.amount;
-    });
-    const labels = Object.keys(byMonth);
-    if (labels.length) {
-      line.data.labels = labels;
-      line.data.datasets[0].data = labels.map((l) => byMonth[l]);
-      line.update();
-    }
+  if (!line) return;
+
+  // trend rows come from api/donations.php?action=trend as
+  // [{ month: 'YYYY-MM', total }]. Always plot the last 6 months and
+  // zero-fill the empty ones - otherwise a dataset where all donations
+  // land in a single month renders as one invisible point.
+  const byMonth = {};
+  (trend || []).forEach((t) => { byMonth[t.month] = Number(t.total); });
+
+  const labels = [];
+  const data = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    labels.push(d.toLocaleString('en-US', { month: 'short' }));
+    data.push(byMonth[key] || 0);
   }
+
+  line.data.labels = labels;
+  line.data.datasets[0].data = data;
+  line.update();
 }

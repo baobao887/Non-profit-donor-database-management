@@ -14,6 +14,24 @@ async function init() {
 
   document.getElementById('openStaffModal').onclick = () => edit();
   document.getElementById('staffForm').onsubmit = save;
+  document.getElementById('copyTempPassword').onclick = copyTempPassword;
+}
+
+async function copyTempPassword(e) {
+  const pw = document.getElementById('tempPasswordValue').textContent;
+  try {
+    await navigator.clipboard.writeText(pw);
+    e.target.textContent = 'Copied!';
+    setTimeout(() => { e.target.textContent = 'Copy'; }, 1500);
+  } catch {
+    // Clipboard API unavailable - the password stays selectable in the box.
+  }
+}
+
+function showTempPassword(email, password) {
+  document.getElementById('tempPasswordEmail').textContent = email;
+  document.getElementById('tempPasswordValue').textContent = password;
+  openModal('tempPasswordModal');
 }
 
 function render() {
@@ -66,11 +84,17 @@ async function save(e) {
     role: byId('staffRole').value.trim(),
   };
   try {
-    if (byId('staffId').value) await updateStaff(byId('staffId').value, data);
-    else await addStaff(data);
+    let tempPassword = null;
+    if (byId('staffId').value) {
+      await updateStaff(byId('staffId').value, data);
+    } else {
+      const created = await addStaff(data);
+      tempPassword = created.temp_password;
+    }
     closeModal('staffModal');
     allStaff = await getStaff();
     render();
+    if (tempPassword) showTempPassword(data.email, tempPassword);
   } catch (err) {
     alert(err.message || 'Could not save staff member.');
   }

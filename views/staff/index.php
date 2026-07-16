@@ -43,5 +43,17 @@ if (!checkSession()) {
       </form>
     </div>
   </div>
+  <div id="tempPasswordModal" class="modal">
+    <div class="modal-backdrop" data-close-modal="tempPasswordModal"></div>
+    <div class="modal-panel">
+      <h2 class="text-xl font-semibold mb-2">Staff member created</h2>
+      <p class="text-slate-500 mb-5">Share this temporary password with <b id="tempPasswordEmail"></b> so they can sign in. It is shown only this once and cannot be retrieved later.</p>
+      <div class="flex items-center gap-3 mb-6">
+        <code id="tempPasswordValue" class="flex-1 px-4 py-3 rounded-2xl bg-slate-100 text-lg font-semibold tracking-wide select-all"></code>
+        <button type="button" id="copyTempPassword" class="btn-secondary px-4 py-3 rounded-2xl">Copy</button>
+      </div>
+      <button type="button" class="btn-primary w-full py-3 rounded-2xl" data-close-modal="tempPasswordModal">Done</button>
+    </div>
+  </div>
   <script type="module" src="<?php echo ASSET_URL; ?>js/pages/staff.js"></script>
 <?php include INCLUDES_PATH . 'footer.php'; ?>

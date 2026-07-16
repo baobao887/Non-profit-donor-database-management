@@ -39,7 +39,7 @@ CREATE TABLE donors (
     address TEXT,
     donor_rank ENUM('Bronze', 'Silver', 'Gold', 'Platinum') NOT NULL DEFAULT 'Bronze',
     total_donated DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    status ENUM('Active', 'Pending', 'Inactive', 'Archived') NOT NULL DEFAULT 'Active',
+    status ENUM('Active', 'Inactive', 'Archived') NOT NULL DEFAULT 'Active',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -54,7 +54,6 @@ include INCLUDES_PATH . 'header.php';
               <select id="filterStatus" class="input-glass" aria-label="Donor status">
                 <option value="all">All statuses</option>
                 <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
                 <option value="Inactive">Inactive</option>
               </select>
               <button type="button" id="applyFilters" class="btn-secondary w-full rounded-3xl sm:col-span-2">Apply filters</button>
@@ -87,7 +86,7 @@ include INCLUDES_PATH . 'header.php';
             <thead class="text-slate-500 text-sm uppercase tracking-[0.18em]">
               <tr>
                 <th class="pb-3 pl-6">Donor</th><th class="pb-3">Email</th><th class="pb-3">Phone</th><th class="pb-3">Level</th>
-                <th class="pb-3">Lifetime</th><th class="pb-3">Last donation</th><th class="pb-3">Status</th><th class="pb-3 pr-6">Actions</th>
+                <th class="pb-3">Lifetime</th><th class="pb-3">Last updated</th><th class="pb-3">Status</th><th class="pb-3 pr-6">Actions</th>
               </tr>
             </thead>
             <tbody id="donors-table-body"></tbody>
@@ -112,15 +111,23 @@ include INCLUDES_PATH . 'header.php';
         <div class="form-field"><label for="donorName">Full name</label><input id="donorName" class="input-glass" required /></div>
         <div class="form-field"><label for="donorEmail">Email</label><input id="donorEmail" type="email" class="input-glass" required /></div>
         <div class="form-field"><label for="donorPhone">Phone</label><input id="donorPhone" class="input-glass" /></div>
-        <div class="form-field"><label for="donorRole">Role / tag</label><input id="donorRole" class="input-glass" placeholder="Major Donor" /></div>
+        <div class="form-field"><label for="donorRole">Tag / note</label><input id="donorRole" class="input-glass" placeholder="Major Donor" /></div>
         <div class="grid grid-cols-2 gap-4">
-          <div class="form-field"><label for="donorLevel">Level</label>
-            <select id="donorLevel" class="input-glass"><option>Bronze</option><option>Silver</option><option>Gold</option><option>Platinum</option></select>
+          <div class="form-field" id="donorLevelField" hidden>
+            <label>Level</label>
+            <div class="py-2"><span id="donorLevelBadge" class="badge"></span></div>
+            <p class="text-xs text-slate-400">Automatically set by total donations.</p>
           </div>
-          <div class="form-field"><label for="donorStatus">Status</label>
-            <select id="donorStatus" class="input-glass"><option>Active</option><option>Pending</option><option>Inactive</option></select>
+          <div class="form-field" id="donorStatusField" hidden><label for="donorStatus">Status</label>
+            <select id="donorStatus" class="input-glass"><option>Active</option><option>Inactive</option></select>
           </div>
         </div>
+        <div class="form-field" id="donorRegisteredField" hidden>
+          <label>Registered</label>
+          <p id="donorRegistered" class="py-2 text-slate-600"></p>
+        </div>
+        <p id="donorLevelHint" class="text-xs text-slate-400 mb-4" hidden>New donors start at Bronze and rank up automatically based on total donations.</p>
+        <p id="donorStatusHint" class="text-xs text-slate-400 mb-4" hidden>New donors are added as Active.</p>
         <div class="flex gap-3 mt-6">
           <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
           <button type="button" data-close-modal="donorModal" class="btn-secondary flex-1 py-3 rounded-2xl">Cancel</button>

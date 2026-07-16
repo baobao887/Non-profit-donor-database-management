@@ -518,6 +518,8 @@ body.modal-active {
 .profile-menu-role { font-size: .8rem; color: #64748b; margin-top: .15rem; }
 .profile-menu-logout { display: flex; align-items: center; gap: .6rem; padding: .85rem 1.1rem; color: #dc2626; font-size: .875rem; font-weight: 500; }
 .profile-menu-logout:hover { background: #fef2f2; }
+.profile-menu-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .85rem 1.1rem; color: #334155; font-size: .875rem; font-weight: 500; background: none; border: 0; text-align: left; cursor: pointer; }
+.profile-menu-item:hover { background: #f1f5f9; }
 
 /* Minimal visual pass: quiet surfaces, restrained elevation, and one accent color. */
 body { background: #f8fafc; }
@@ -544,7 +546,7 @@ body { background: #f8fafc; }
 .bg-gradient-to-br, .bg-gradient-to-r { background-image: none !important; }
 .from-sky-500, .from-sky-600 { background-color: #2563eb !important; }
 .from-emerald-500 { background-color: #059669 !important; }
-.from-amber-500 { background-color: #d97706 !important; }
+.from-amber-400, .from-amber-500 { background-color: #d97706 !important; }
 .from-violet-500 { background-color: #7c3aed !important; }
 @media (max-width: 900px) { .sidebar-panel { position: fixed; top: 0; bottom: 0; height: 100vh; border-radius: 0; } }
 
