@@ -3,8 +3,40 @@
  * Fetches all data from MySQL database via PHP APIs
  */
 
+import { csrfHeaders } from './api.js';
+
 let cache = null;
 let sessionCheckInterval = null;
+let loadErrorBannerShown = false;
+
+/**
+ * Surface read failures instead of silently rendering empty data. The
+ * fetch helpers below still return safe empty defaults so pages don't
+ * crash, but the user now sees that data is missing, not absent.
+ */
+function reportLoadFailure() {
+  if (loadErrorBannerShown) return;
+  const host = document.querySelector('main') || document.body;
+  if (!host) return;
+  loadErrorBannerShown = true;
+
+  const banner = document.createElement('div');
+  banner.id = 'loadErrorBanner';
+  banner.className = 'mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 flex items-center justify-between gap-3';
+  const msg = document.createElement('span');
+  msg.textContent = 'Some data failed to load. Check your connection and refresh the page.';
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'font-semibold hover:text-red-900';
+  dismiss.setAttribute('aria-label', 'Dismiss');
+  dismiss.textContent = '✕';
+  dismiss.addEventListener('click', () => {
+    banner.remove();
+    loadErrorBannerShown = false;
+  });
+  banner.append(msg, dismiss);
+  host.prepend(banner);
+}
 
 /**
  * Initialize store and verify authentication
@@ -58,6 +90,7 @@ export async function getStats() {
     cache.stats = stats;
     return stats;
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching stats:', error);
     return { totalDonors: 0, totalDonations: 0, campaignCount: 0, activeCampaigns: 0, topDonors: [], recentDonations: [], campaignsNeedingAttention: [] };
   }
@@ -68,7 +101,7 @@ export async function getStats() {
  */
 export async function getDonors(page = 1, status = null) {
   try {
-    let url = `api/donors.php?action=list&page=${page}`;
+    let url = `api/donors.php?action=list&page=${page}&limit=1000`;
     if (status) url += `&status=${status}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch donors');
@@ -76,6 +109,7 @@ export async function getDonors(page = 1, status = null) {
     cache.donors = data.donors || [];
     return cache.donors;
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donors:', error);
     return [];
   }
@@ -87,6 +121,7 @@ export async function getDonor(id) {
     if (!res.ok) return null;
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donor:', error);
     return null;
   }
@@ -98,6 +133,7 @@ export async function getTopDonors(limit = 5) {
     if (!res.ok) throw new Error('Failed to fetch top donors');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching top donors:', error);
     return [];
   }
@@ -109,6 +145,7 @@ export async function searchDonors(query) {
     if (!res.ok) throw new Error('Failed to search donors');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error searching donors:', error);
     return [];
   }
@@ -118,7 +155,7 @@ export async function addDonor(donor) {
   try {
     const res = await fetch('api/donors.php?action=create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(donor)
     });
     if (!res.ok) throw new Error('Failed to create donor');
@@ -134,7 +171,7 @@ export async function updateDonor(id, updates) {
   try {
     const res = await fetch('api/donors.php?action=update', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donor_id: id, ...updates })
     });
     if (!res.ok) throw new Error('Failed to update donor');
@@ -149,13 +186,13 @@ export async function deleteDonor(id) {
   try {
     const res = await fetch('api/donors.php?action=archive', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donor_id: id })
     });
-    if (!res.ok) throw new Error('Failed to delete donor');
+    if (!res.ok) throw new Error('Failed to archive donor');
     return true;
   } catch (error) {
-    console.error('Error deleting donor:', error);
+    console.error('Error archiving donor:', error);
     throw error;
   }
 }
@@ -165,7 +202,7 @@ export async function deleteDonor(id) {
  */
 export async function getCampaigns(page = 1, status = null) {
   try {
-    let url = `api/campaigns.php?action=list&page=${page}`;
+    let url = `api/campaigns.php?action=list&page=${page}&limit=1000`;
     if (status) url += `&status=${status}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch campaigns');
@@ -173,6 +210,7 @@ export async function getCampaigns(page = 1, status = null) {
     cache.campaigns = data.campaigns || [];
     return cache.campaigns;
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching campaigns:', error);
     return [];
   }
@@ -184,6 +222,7 @@ export async function getLiveCampaigns() {
     if (!res.ok) throw new Error('Failed to fetch live campaigns');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching live campaigns:', error);
     return [];
   }
@@ -195,6 +234,7 @@ export async function getCampaignById(id) {
     if (!res.ok) return null;
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching campaign:', error);
     return null;
   }
@@ -204,7 +244,7 @@ export async function addCampaign(campaign) {
   try {
     const res = await fetch('api/campaigns.php?action=create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(campaign)
     });
     if (!res.ok) throw new Error('Failed to create campaign');
@@ -220,7 +260,7 @@ export async function updateCampaign(id, updates) {
   try {
     const res = await fetch('api/campaigns.php?action=update', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ campaign_id: id, ...updates })
     });
     if (!res.ok) throw new Error('Failed to update campaign');
@@ -235,7 +275,7 @@ export async function deleteCampaign(id) {
   try {
     const res = await fetch('api/campaigns.php?action=archive', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ campaign_id: id })
     });
     const data = await res.json();
@@ -251,7 +291,7 @@ export async function updateCampaignStatus(id, status) {
   try {
     const res = await fetch('api/campaigns.php?action=update-status', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ campaign_id: id, status })
     });
     if (!res.ok) throw new Error('Failed to update campaign status');
@@ -267,12 +307,13 @@ export async function updateCampaignStatus(id, status) {
  */
 export async function getDonations(page = 1) {
   try {
-    const res = await fetch(`api/donations.php?action=list&page=${page}`);
+    const res = await fetch(`api/donations.php?action=list&page=${page}&limit=1000`);
     if (!res.ok) throw new Error('Failed to fetch donations');
     const data = await res.json();
     cache.donations = data.donations || [];
     return cache.donations;
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donations:', error);
     return [];
   }
@@ -284,6 +325,7 @@ export async function getDonationsByDonor(donorId) {
     if (!res.ok) throw new Error('Failed to fetch donor donations');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donor donations:', error);
     return [];
   }
@@ -295,6 +337,7 @@ export async function getRecentDonations(limit = 10) {
     if (!res.ok) throw new Error('Failed to fetch recent donations');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching recent donations:', error);
     return [];
   }
@@ -306,6 +349,7 @@ export async function getDonationTrend(months = 6) {
     if (!res.ok) throw new Error('Failed to fetch donation trend');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donation trend:', error);
     return [];
   }
@@ -317,6 +361,7 @@ export async function getDonationBreakdown() {
     if (!res.ok) throw new Error('Failed to fetch donation breakdown');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donation breakdown:', error);
     return [];
   }
@@ -328,6 +373,7 @@ export async function getPaymentMethodBreakdown() {
     if (!res.ok) throw new Error('Failed to fetch payment breakdown');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching payment breakdown:', error);
     return [];
   }
@@ -339,6 +385,7 @@ export async function getWeekdayRevenue() {
     if (!res.ok) throw new Error('Failed to fetch weekday revenue');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching weekday revenue:', error);
     return [];
   }
@@ -348,7 +395,7 @@ export async function addDonation(donation) {
   try {
     const res = await fetch('api/donations.php?action=create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(donation)
     });
     if (!res.ok) throw new Error('Failed to create donation');
@@ -364,7 +411,7 @@ export async function updateDonation(id, updates) {
   try {
     const res = await fetch('api/donations.php?action=update', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donation_id: id, ...updates })
     });
     if (!res.ok) throw new Error('Failed to update donation');
@@ -386,6 +433,7 @@ export async function getCommunications(page = 1) {
     cache.communications = data.communications || [];
     return { communications: cache.communications, total: data.total || 0, page: data.page || page, limit: data.limit || 20 };
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching communications:', error);
     return { communications: [], total: 0, page, limit: 20 };
   }
@@ -397,6 +445,7 @@ export async function getCommunicationsByDonor(donorId) {
     if (!res.ok) throw new Error('Failed to fetch donor communications');
     return await res.json();
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching donor communications:', error);
     return [];
   }
@@ -406,7 +455,7 @@ export async function addCommunication(entry) {
   try {
     const res = await fetch('api/communications.php?action=create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(entry)
     });
     const data = await res.json();
@@ -422,7 +471,7 @@ export async function updateCommunication(id, updates) {
   try {
     const res = await fetch('api/communications.php?action=update', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ communication_id: id, ...updates })
     });
     const data = await res.json();
@@ -438,7 +487,7 @@ export async function deleteCommunication(id) {
   try {
     const res = await fetch('api/communications.php?action=delete', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ communication_id: id })
     });
     const data = await res.json();
@@ -461,6 +510,7 @@ export async function getStaff() {
     cache.staff = data.staff || [];
     return cache.staff;
   } catch (error) {
+    reportLoadFailure();
     console.error('Error fetching staff:', error);
     return [];
   }
@@ -470,7 +520,7 @@ export async function addStaff(member) {
   try {
     const res = await fetch('api/staff.php?action=create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(member)
     });
     const data = await res.json();
@@ -486,7 +536,7 @@ export async function updateStaff(id, updates) {
   try {
     const res = await fetch('api/staff.php?action=update', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ user_id: id, ...updates })
     });
     const data = await res.json();
@@ -502,7 +552,7 @@ export async function deleteStaff(id) {
   try {
     const res = await fetch('api/staff.php?action=delete', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ user_id: id })
     });
     const data = await res.json();

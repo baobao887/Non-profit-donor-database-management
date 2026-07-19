@@ -1,4 +1,4 @@
-import { initStore, getDonations, getDonors, addDonation, getCampaigns, getPaymentMethodBreakdown, getWeekdayRevenue } from '../store.js';
+import { initStore, getDonations, getDonors, addDonation, updateDonation, getCampaigns, getPaymentMethodBreakdown, getWeekdayRevenue } from '../store.js';
 import { formatCurrency, formatDate, statusBadgeClass, openModal, closeModal, bindModalClose, exportCsv } from '../utils.js';
 import { initLayout } from '../layout.js';
 import { initCharts } from '../charts.js';
@@ -27,8 +27,10 @@ async function init() {
     openModal('donationModal');
   });
   document.getElementById('donationForm')?.addEventListener('submit', saveDonation);
+  document.getElementById('donationEditForm')?.addEventListener('submit', saveDonationEdit);
   document.getElementById('exportDonations')?.addEventListener('click', exportDonations);
   document.getElementById('filterStatus')?.addEventListener('change', renderTable);
+  document.getElementById('donationSearch')?.addEventListener('input', renderTable);
 }
 
 function donorName(id) {
@@ -70,7 +72,12 @@ function renderTable() {
   if (!tbody) return;
 
   const statusFilter = document.getElementById('filterStatus')?.value || 'all';
-  const donations = statusFilter !== 'all' ? allDonations.filter((d) => d.payment_status === statusFilter) : allDonations;
+  const q = document.getElementById('donationSearch')?.value.trim().toLowerCase() || '';
+  const donations = allDonations.filter((d) => {
+    const matchStatus = statusFilter === 'all' || d.payment_status === statusFilter;
+    const matchQ = !q || donorName(d.donor_id).toLowerCase().includes(q) || campaignName(d.campaign_id).toLowerCase().includes(q);
+    return matchStatus && matchQ;
+  });
 
   tbody.innerHTML = donations.length ? donations.map((d) => {
     const methodIcon = d.payment_method === 'Card' ? 'fa-solid fa-credit-card text-sky-600'
@@ -83,9 +90,9 @@ function renderTable() {
       <td class="py-4 font-semibold">${formatCurrency(d.amount)}</td>
       <td class="py-4"><span class="inline-flex items-center gap-2 text-slate-600"><i class="${methodIcon}"></i> ${d.payment_method}</span></td>
       <td class="py-4"><span class="badge ${statusBadgeClass(d.payment_status)}">${d.payment_status}</span></td>
-      <td class="py-4 pr-6"><button type="button" class="btn-primary-outline btn-sm" data-receipt="${d.donation_id}">Receipt</button></td>
+      <td class="py-4 pr-6"><div class="flex gap-2"><button type="button" class="btn-primary-outline btn-sm" data-edit-donation="${d.donation_id}">Edit</button><button type="button" class="btn-primary-outline btn-sm" data-receipt="${d.donation_id}">Receipt</button></div></td>
     </tr>`;
-  }).join('') : `<tr><td colspan="7" class="empty-state px-6 py-10 text-center text-slate-500">No donations found.</td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty-state px-6 py-10 text-center text-slate-500">${q || statusFilter !== 'all' ? 'No donations match your search.' : 'No donations found.'}</td></tr>`;
 
   tbody.querySelectorAll('[data-receipt]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -93,6 +100,48 @@ function renderTable() {
       if (d) alert(`Receipt #${d.donation_id}\nAmount: ${formatCurrency(d.amount)}\nDate: ${formatDate(d.donation_date)}\nCampaign: ${campaignName(d.campaign_id)}`);
     });
   });
+  tbody.querySelectorAll('[data-edit-donation]').forEach((btn) => {
+    btn.addEventListener('click', () => openEditModal(btn.dataset.editDonation));
+  });
+}
+
+function openEditModal(id) {
+  const d = allDonations.find((x) => String(x.donation_id) === String(id));
+  if (!d) return;
+  document.getElementById('editDonationId').value = d.donation_id;
+  document.getElementById('editDonationContext').textContent =
+    `#${d.donation_id} · ${donorName(d.donor_id)} → ${campaignName(d.campaign_id)} · ${formatDate(d.donation_date)}`;
+  document.getElementById('editDonationAmount').value = d.amount;
+  document.getElementById('editDonationMethod').value = d.payment_method;
+  document.getElementById('editDonationStatus').value = d.payment_status;
+  openModal('donationEditModal');
+}
+
+// Status changes recompute donor totals and campaign amount_raised
+// server-side (Donation::update runs both inside a transaction), so a
+// Pending gift marked Succeeded is immediately reflected everywhere.
+async function saveDonationEdit(e) {
+  e.preventDefault();
+  const id = document.getElementById('editDonationId').value;
+  const amount = Number(document.getElementById('editDonationAmount').value);
+  if (!(amount > 0)) {
+    alert('Amount must be greater than 0.');
+    return;
+  }
+  try {
+    await updateDonation(id, {
+      amount,
+      payment_method: document.getElementById('editDonationMethod').value,
+      payment_status: document.getElementById('editDonationStatus').value,
+    });
+    closeModal('donationEditModal');
+    allDonations = await getDonations();
+    updateStats();
+    renderTable();
+    renderCharts();
+  } catch (err) {
+    alert(err.message || 'Could not update donation.');
+  }
 }
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -130,6 +179,7 @@ async function saveDonation(e) {
       amount: Number(document.getElementById('donationAmount').value),
       donation_date: document.getElementById('donationDate').value,
       payment_method: document.getElementById('donationMethod').value,
+      payment_status: document.getElementById('donationStatus').value,
     });
     closeModal('donationModal');
     allDonations = await getDonations();

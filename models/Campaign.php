@@ -115,7 +115,7 @@ class Campaign {
     /**
      * Create campaign
      */
-    public function create($campaignName, $description, $goalAmount, $startDate, $endDate, $createdBy) {
+    public function create($campaignName, $description, $goalAmount, $startDate, $endDate, $createdBy, $status = CAMPAIGN_STATUS_PLANNING) {
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO campaigns (campaign_name, description, goal_amount, amount_raised, start_date, end_date, status, created_by, created_at)
@@ -127,7 +127,7 @@ class Campaign {
                 $goalAmount,
                 $startDate,
                 $endDate,
-                CAMPAIGN_STATUS_PLANNING,
+                $status,
                 $createdBy
             ]);
             return $this->pdo->lastInsertId();

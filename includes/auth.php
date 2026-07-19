@@ -5,6 +5,17 @@
 
 require_once __DIR__ . '/functions.php';
 
+// Harden the session cookie: HttpOnly keeps it out of reach of any script
+// (XSS), SameSite=Lax blocks cross-site sends on non-navigation requests,
+// and Secure is enabled automatically when serving over HTTPS.
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
+
 session_start();
 
 /**
@@ -56,6 +67,10 @@ function requireAnyRole($roles) {
  * Login user
  */
 function loginUser($user) {
+    // Issue a fresh session ID so a pre-login session ID can't be reused
+    // post-authentication (session fixation).
+    session_regenerate_id(true);
+
     $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['user'] = [
         'user_id' => $user['user_id'],
@@ -88,27 +103,69 @@ function logoutUser() {
 }
 
 /**
- * Authenticate user with email and password
+ * Authenticate user with email and password, with brute-force lockout.
+ * Returns ['success' => true, 'user' => row] on success, or
+ * ['success' => false, 'error' => 'invalid'|'locked'] on failure.
+ * After LOGIN_MAX_ATTEMPTS wrong passwords the account is locked for
+ * LOGIN_LOCKOUT_MINUTES and even a correct password is rejected until
+ * the lock expires. The lock comparison runs in SQL so it uses the same
+ * clock as the DATE_ADD(NOW(), ...) that set locked_until.
  */
 function authenticateUser($email, $password) {
     try {
         $pdo = getDB();
         $stmt = $pdo->prepare("
-            SELECT user_id, first_name, last_name, email, password_hash, role, status
+            SELECT user_id, first_name, last_name, email, password_hash, role, status,
+                   failed_login_attempts,
+                   (locked_until IS NOT NULL AND locked_until > NOW()) AS is_locked
             FROM users
             WHERE email = ? AND status = ?
         ");
         $stmt->execute([$email, USER_STATUS_ACTIVE]);
         $user = $stmt->fetch();
-        
-        if ($user && verifyPassword($password, $user['password_hash'])) {
-            return $user;
+
+        if (!$user) {
+            return ['success' => false, 'error' => 'invalid'];
         }
-        
-        return false;
+
+        if ($user['is_locked']) {
+            return ['success' => false, 'error' => 'locked'];
+        }
+
+        if (verifyPassword($password, $user['password_hash'])) {
+            // Success clears the failure history
+            $stmt = $pdo->prepare("
+                UPDATE users SET failed_login_attempts = 0, locked_until = NULL
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$user['user_id']]);
+            unset($user['password_hash'], $user['failed_login_attempts'], $user['is_locked']);
+            return ['success' => true, 'user' => $user];
+        }
+
+        // Wrong password: the final allowed failure trips the lockout. The
+        // counter resets when the lock is applied, so once an expired lock
+        // clears the user gets a fresh set of attempts.
+        if ($user['failed_login_attempts'] + 1 >= LOGIN_MAX_ATTEMPTS) {
+            $stmt = $pdo->prepare("
+                UPDATE users
+                SET failed_login_attempts = 0,
+                    locked_until = DATE_ADD(NOW(), INTERVAL " . (int)LOGIN_LOCKOUT_MINUTES . " MINUTE)
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$user['user_id']]);
+            return ['success' => false, 'error' => 'locked'];
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE users SET failed_login_attempts = failed_login_attempts + 1
+            WHERE user_id = ?
+        ");
+        $stmt->execute([$user['user_id']]);
+        return ['success' => false, 'error' => 'invalid'];
     } catch (PDOException $e) {
         error_log('Authentication error: ' . $e->getMessage());
-        return false;
+        return ['success' => false, 'error' => 'invalid'];
     }
 }
 

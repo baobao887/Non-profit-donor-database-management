@@ -17,6 +17,9 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+// All state-changing requests must carry a valid CSRF token (GET passes through)
+requireApiCsrf();
+
 try {
     $pdo = getDB();
     $campaignModel = new Campaign($pdo);
@@ -30,20 +33,23 @@ try {
         if ($action === 'list') {
             $page = (int)($_GET['page'] ?? 1);
             $status = $_GET['status'] ?? null;
-            $campaigns = $campaignModel->getAll($page, ITEMS_PER_PAGE, $status);
+            // Optional capped page size so list pages and form dropdowns can
+            // load the full dataset instead of silently seeing only page 1.
+            $limit = min(1000, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $campaigns = $campaignModel->getAll($page, $limit, $status);
             $total = $campaignModel->getTotalCount($status);
-            
+
             // Add progress to each campaign
             $campaigns = array_map(function($c) {
                 $c['progress'] = calculateCampaignProgress($c['amount_raised'], $c['goal_amount']);
                 return $c;
             }, $campaigns);
-            
+
             echo json_encode([
                 'campaigns' => $campaigns,
                 'total' => $total,
                 'page' => $page,
-                'limit' => ITEMS_PER_PAGE
+                'limit' => $limit
             ]);
         }
         elseif ($action === 'get' && isset($_GET['id'])) {
@@ -89,6 +95,7 @@ try {
             $goalAmount = (float)($data['goal_amount'] ?? 0);
             $startDate = $data['start_date'] ?? null;
             $endDate = $data['end_date'] ?? null;
+            $status = $data['status'] ?? CAMPAIGN_STATUS_PLANNING;
 
             if (empty($campaignName)) {
                 throw new Exception('Campaign name is required');
@@ -102,11 +109,19 @@ try {
                 throw new Exception('Start date and end date are required');
             }
 
+            if (!validateDate($startDate) || !validateDate($endDate)) {
+                throw new Exception('Invalid date (expected YYYY-MM-DD)');
+            }
+
             if (strtotime($endDate) < strtotime($startDate)) {
                 throw new Exception('End date cannot be before start date');
             }
 
-            $campaignId = $campaignModel->create($campaignName, $description, $goalAmount, $startDate, $endDate, getCurrentUserId());
+            if (!in_array($status, CAMPAIGN_STATUSES)) {
+                throw new Exception('Invalid campaign status');
+            }
+
+            $campaignId = $campaignModel->create($campaignName, $description, $goalAmount, $startDate, $endDate, getCurrentUserId(), $status);
             
             logActivity(getCurrentUserId(), 'create', "Created campaign: $campaignName", 'campaign', $campaignId);
             
@@ -155,6 +170,10 @@ try {
 
             if (empty($startDate) || empty($endDate)) {
                 throw new Exception('Start date and end date are required');
+            }
+
+            if (!validateDate($startDate) || !validateDate($endDate)) {
+                throw new Exception('Invalid date (expected YYYY-MM-DD)');
             }
 
             if (strtotime($endDate) < strtotime($startDate)) {
@@ -239,8 +258,15 @@ try {
         echo json_encode(['error' => 'Method not allowed']);
     }
     
+} catch (PDOException $e) {
+    // Never leak raw SQL error details to the client
+    error_log('Campaigns API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'A server error occurred. Please try again.']);
 } catch (Exception $e) {
-    http_response_code(400);
+    if (http_response_code() === 200) {
+        http_response_code(400);
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

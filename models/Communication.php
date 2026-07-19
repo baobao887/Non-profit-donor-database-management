@@ -90,7 +90,7 @@ class Communication {
     /**
      * Create communication
      */
-    public function create($donorId, $type, $content, $staffId = null) {
+    public function create($donorId, $type, $content, $staffId = null, $status = 'Draft') {
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO communications (donor_id, type, content, status, staff_id, created_at)
@@ -100,7 +100,7 @@ class Communication {
                 $donorId,
                 $type,
                 $content,
-                'Draft',
+                $status,
                 $staffId
             ]);
             return $this->pdo->lastInsertId();

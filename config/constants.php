@@ -24,6 +24,12 @@ define('DONOR_STATUS_ARCHIVED', 'Archived');
 // Donor Ranks
 define('DONOR_RANKS', ['Bronze', 'Silver', 'Gold', 'Platinum']);
 
+define('DONOR_STATUSES', [
+    'Active',
+    'Inactive',
+    'Archived'
+]);
+
 // Campaign Status
 define('CAMPAIGN_STATUS_PLANNING', 'Planning');
 define('CAMPAIGN_STATUS_LIVE', 'Live');
@@ -62,8 +68,30 @@ define('PAYMENT_METHODS', [
     'Check'
 ]);
 
+// Communication Status
+define('COMMUNICATION_STATUSES', [
+    'Draft',
+    'Sent',
+    'In review',
+    'Pending',
+    'Completed'
+]);
+
+// Communication Types
+define('COMMUNICATION_TYPES', [
+    'Email outreach',
+    'Call logged',
+    'Meeting note',
+    'Thank you',
+    'Other'
+]);
+
 // Session timeout (in seconds)
 define('SESSION_TIMEOUT', 1800); // 30 minutes
+
+// Login rate limiting
+define('LOGIN_MAX_ATTEMPTS', 5);
+define('LOGIN_LOCKOUT_MINUTES', 15);
 
 // Pagination
 define('ITEMS_PER_PAGE', 20);

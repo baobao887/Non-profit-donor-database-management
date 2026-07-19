@@ -28,6 +28,10 @@ try {
     
     // Set timezone
     $pdo->exec("SET time_zone = '+00:00'");
+
+    // Fail loudly on bad data (invalid enums, malformed dates, over-length
+    // strings) instead of MariaDB's default silent coercion/truncation.
+    $pdo->exec("SET SESSION sql_mode = 'STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 } catch (PDOException $e) {
     http_response_code(500);
     die(json_encode(['error' => 'Database connection failed']));

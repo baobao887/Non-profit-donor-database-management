@@ -120,7 +120,11 @@ class Donation {
     /**
      * Create donation
      */
-    public function create($donorId, $campaignId, $amount, $donationDate, $paymentMethod) {
+    public function create($donorId, $campaignId, $amount, $donationDate, $paymentMethod, $paymentStatus = DONATION_STATUS_SUCCEEDED) {
+        // The donation row and the aggregates derived from it
+        // (campaigns.amount_raised, donors.total_donated/donor_rank) must
+        // commit or roll back together.
+        $this->pdo->beginTransaction();
         try {
             // Check if campaign is live
             $stmt = $this->pdo->prepare("SELECT status FROM campaigns WHERE campaign_id = ?");
@@ -129,7 +133,7 @@ class Donation {
             if ($campaign['status'] !== CAMPAIGN_STATUS_LIVE && $campaign['status'] !== CAMPAIGN_STATUS_PAUSED) {
                 throw new Exception('Campaign must be Live or Paused to accept donations');
             }
-            
+
             $stmt = $this->pdo->prepare("
                 INSERT INTO donations (donor_id, campaign_id, amount, donation_date, payment_method, payment_status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, NOW())
@@ -140,21 +144,23 @@ class Donation {
                 $amount,
                 $donationDate,
                 $paymentMethod,
-                DONATION_STATUS_SUCCEEDED
+                $paymentStatus
             ]);
-            
+
             $donationId = $this->pdo->lastInsertId();
-            
+
             // Update campaign amount raised
             $campaignModel = new Campaign($this->pdo);
             $campaignModel->updateAmountRaised($campaignId);
-            
+
             // Update donor totals
             $donorModel = new Donor($this->pdo);
             $donorModel->updateTotalAndRank($donorId);
-            
+
+            $this->pdo->commit();
             return $donationId;
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             throw $e;
         }
     }
@@ -163,25 +169,28 @@ class Donation {
      * Update donation
      */
     public function update($donationId, $amount, $paymentMethod, $paymentStatus) {
+        $this->pdo->beginTransaction();
         try {
             $donation = $this->getById($donationId);
-            
+
             $stmt = $this->pdo->prepare("
                 UPDATE donations
                 SET amount = ?, payment_method = ?, payment_status = ?, updated_at = NOW()
                 WHERE donation_id = ?
             ");
             $stmt->execute([$amount, $paymentMethod, $paymentStatus, $donationId]);
-            
+
             // Update campaign and donor totals
             $campaignModel = new Campaign($this->pdo);
             $campaignModel->updateAmountRaised($donation['campaign_id']);
-            
+
             $donorModel = new Donor($this->pdo);
             $donorModel->updateTotalAndRank($donation['donor_id']);
-            
+
+            $this->pdo->commit();
             return true;
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             throw $e;
         }
     }
@@ -190,25 +199,28 @@ class Donation {
      * Update payment status
      */
     public function updatePaymentStatus($donationId, $paymentStatus) {
+        $this->pdo->beginTransaction();
         try {
             $donation = $this->getById($donationId);
-            
+
             $stmt = $this->pdo->prepare("
                 UPDATE donations
                 SET payment_status = ?, updated_at = NOW()
                 WHERE donation_id = ?
             ");
             $stmt->execute([$paymentStatus, $donationId]);
-            
+
             // Update campaign and donor totals
             $campaignModel = new Campaign($this->pdo);
             $campaignModel->updateAmountRaised($donation['campaign_id']);
-            
+
             $donorModel = new Donor($this->pdo);
             $donorModel->updateTotalAndRank($donation['donor_id']);
-            
+
+            $this->pdo->commit();
             return true;
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             throw $e;
         }
     }

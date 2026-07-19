@@ -9,6 +9,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="<?php echo generateCSRFToken(); ?>" />
   <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'DonorTrack'; ?></title>
   <link rel="icon" type="image/png" href="<?php echo $assetPath; ?>images/favicon.png" />
   <link rel="apple-touch-icon" href="<?php echo $assetPath; ?>images/apple-touch-icon.png" />

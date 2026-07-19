@@ -18,6 +18,7 @@ async function init() {
 
   document.getElementById('openAddNote')?.addEventListener('click', () => openAddModal());
   document.getElementById('commForm')?.addEventListener('submit', saveNote);
+  document.getElementById('commSearch')?.addEventListener('input', renderList);
   document.getElementById('commPrevPage')?.addEventListener('click', () => renderTimeline(currentPage - 1));
   document.getElementById('commNextPage')?.addEventListener('click', () => renderTimeline(currentPage + 1));
 }
@@ -29,16 +30,29 @@ function populateDonorSelect(donors) {
 }
 
 async function renderTimeline(page) {
-  const container = document.getElementById('communications-list');
-  if (!container) return;
-
   const data = await getCommunications(Math.max(1, page));
   currentItems = data.communications;
   totalItems = data.total;
   pageLimit = data.limit;
   currentPage = data.page;
 
-  container.innerHTML = currentItems.length ? currentItems.map((c, i) => {
+  renderList();
+  renderPagination();
+}
+
+// Renders the cached page of communications, applying the search box
+// client-side so typing never re-fetches from the API.
+function renderList() {
+  const container = document.getElementById('communications-list');
+  if (!container) return;
+
+  const q = document.getElementById('commSearch')?.value.trim().toLowerCase() || '';
+  const items = !q ? currentItems : currentItems.filter((c) =>
+    `${c.first_name} ${c.last_name}`.toLowerCase().includes(q)
+    || c.type.toLowerCase().includes(q)
+    || c.content.toLowerCase().includes(q));
+
+  container.innerHTML = items.length ? items.map((c, i) => {
     const donorName = `${c.first_name} ${c.last_name}`;
     const staffName = c.staff_first_name ? `${c.staff_first_name} ${c.staff_last_name}` : 'Unassigned';
     const when = formatRelativeTime(c.created_at) || formatDate(c.created_at);
@@ -60,12 +74,10 @@ async function renderTimeline(page) {
         </div>
         <p class="text-slate-600">${escapeHtml(c.content)}</p>
       </article>`;
-  }).join('') : `<div class="empty-state card-glass p-10 text-center text-slate-500 rounded-[28px]">No communications yet. Add your first note.</div>`;
+  }).join('') : `<div class="empty-state card-glass p-10 text-center text-slate-500 rounded-[28px]">${q ? 'No communications match your search.' : 'No communications yet. Add your first note.'}</div>`;
 
   container.querySelectorAll('[data-edit]').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.edit)));
   container.querySelectorAll('[data-delete]').forEach((btn) => btn.addEventListener('click', () => removeNote(btn.dataset.delete)));
-
-  renderPagination();
 }
 
 function renderPagination() {
@@ -80,7 +92,6 @@ function openAddModal() {
   document.getElementById('commForm').reset();
   document.getElementById('commId').value = '';
   document.getElementById('commDonor').disabled = false;
-  document.getElementById('commStatusField').hidden = true;
   openModal('commModal');
 }
 
@@ -93,7 +104,6 @@ function openEditModal(id) {
   document.getElementById('commDonor').value = c.donor_id;
   document.getElementById('commDonor').disabled = true;
   document.getElementById('commStatus').value = c.status;
-  document.getElementById('commStatusField').hidden = false;
   document.getElementById('commContent').value = c.content;
   openModal('commModal');
 }
@@ -126,6 +136,7 @@ async function saveNote(e) {
         type: document.getElementById('commType').value,
         donor_id: document.getElementById('commDonor').value,
         content,
+        status: document.getElementById('commStatus').value,
       });
     }
     closeModal('commModal');

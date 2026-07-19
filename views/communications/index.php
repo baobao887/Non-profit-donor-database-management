@@ -24,6 +24,10 @@ if (!checkSession()) {
         </div>
         <button type="button" id="openAddNote" class="btn-primary px-5 py-3 rounded-2xl bg-sky-600 text-white">New note</button>
       </header>
+      <div class="relative mb-6">
+        <i class="fa-solid fa-search text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+        <input type="search" id="commSearch" placeholder="Search by donor name, type, or notes..." class="w-full rounded-3xl border border-slate-200 bg-white/90 pl-12 pr-4 py-4 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition" />
+      </div>
       <section id="communications-list" class="space-y-6"></section>
       <div class="flex items-center justify-between mt-6 text-sm text-slate-500">
         <span id="commPageInfo"></span>
@@ -41,11 +45,11 @@ if (!checkSession()) {
       <form id="commForm">
         <input type="hidden" id="commId" value="" />
         <div class="form-field"><label for="commType">Type</label>
-          <select id="commType" class="input-glass"><option>Email outreach</option><option>Call logged</option><option>Meeting note</option></select>
+          <select id="commType" class="input-glass"><option>Email outreach</option><option>Call logged</option><option>Meeting note</option><option>Thank you</option><option>Other</option></select>
         </div>
         <div class="form-field"><label for="commDonor">Donor</label><select id="commDonor" class="input-glass" required></select></div>
-        <div class="form-field" id="commStatusField" hidden><label for="commStatus">Status</label>
-          <select id="commStatus" class="input-glass"><option>Draft</option><option>Sent</option><option>In review</option><option>Pending</option></select>
+        <div class="form-field" id="commStatusField"><label for="commStatus">Status</label>
+          <select id="commStatus" class="input-glass"><option>Draft</option><option>Sent</option><option>In review</option><option>Pending</option><option>Completed</option></select>
         </div>
         <div class="form-field"><label for="commContent">Notes</label><textarea id="commContent" class="input-glass" rows="4" required></textarea></div>
         <div class="flex gap-3 mt-6">

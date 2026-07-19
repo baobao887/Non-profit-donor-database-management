@@ -103,7 +103,7 @@ function render() {
         <div class="flex gap-2">
           <a class="btn-primary-outline btn-sm" href="donor-profile.php?id=${d.donor_id}">View</a>
           <button type="button" class="btn-primary-outline btn-sm" data-edit="${d.donor_id}">Edit</button>
-          ${isAdmin ? `<button type="button" class="btn-danger-outline btn-sm" data-delete="${d.donor_id}">Delete</button>` : ''}
+          ${isAdmin ? `<button type="button" class="btn-danger-outline btn-sm" data-delete="${d.donor_id}">Archive</button>` : ''}
         </div>
       </td>
     </tr>`).join('') : `<tr><td colspan="8" class="empty-state px-6 py-10 text-center text-slate-500">No donors match your filters.</td></tr>`;
@@ -113,14 +113,14 @@ function render() {
 
   tbody.querySelectorAll('[data-edit]').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.edit)));
   tbody.querySelectorAll('[data-delete]').forEach((btn) => btn.addEventListener('click', async () => {
-    if (!confirm('Delete this donor?')) return;
+    if (!confirm('Archive this donor? Their record and donation history will be preserved but hidden from the active directory.')) return;
     try {
       await deleteDonor(btn.dataset.delete);
       allDonors = await getDonors();
       applyFilters();
       renderSummary();
     } catch (err) {
-      alert(err.message || 'Could not delete donor.');
+      alert(err.message || 'Could not archive donor.');
     }
   }));
 }

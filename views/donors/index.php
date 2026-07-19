@@ -55,6 +55,7 @@ include INCLUDES_PATH . 'header.php';
                 <option value="all">All statuses</option>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
+                <option value="Archived">Archived</option>
               </select>
               <button type="button" id="applyFilters" class="btn-secondary w-full rounded-3xl sm:col-span-2">Apply filters</button>
             </div>
@@ -119,7 +120,7 @@ include INCLUDES_PATH . 'header.php';
             <p class="text-xs text-slate-400">Automatically set by total donations.</p>
           </div>
           <div class="form-field" id="donorStatusField" hidden><label for="donorStatus">Status</label>
-            <select id="donorStatus" class="input-glass"><option>Active</option><option>Inactive</option></select>
+            <select id="donorStatus" class="input-glass"><option>Active</option><option>Inactive</option><option>Archived</option></select>
           </div>
         </div>
         <div class="form-field" id="donorRegisteredField" hidden>

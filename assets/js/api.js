@@ -6,6 +6,16 @@
  */
 
 /**
+ * CSRF token header for state-changing requests. The token is rendered
+ * into <meta name="csrf-token"> by includes/header.php and verified
+ * server-side by requireApiCsrf() in every mutating api/*.php endpoint.
+ */
+export function csrfHeaders() {
+  const token = document.querySelector('meta[name="csrf-token"]')?.content;
+  return token ? { 'X-CSRF-Token': token } : {};
+}
+
+/**
  * GET JSON from a backend endpoint.
  * Automatically redirects to login.php if the session is invalid (401).
  */
@@ -29,7 +39,7 @@ export async function apiPost(endpoint, body = {}) {
   const res = await fetch(endpoint, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
     body: JSON.stringify(body),
   });
 
@@ -46,6 +56,7 @@ export async function apiDelete(endpoint, params = {}) {
   const res = await fetch(url, {
     method: 'DELETE',
     credentials: 'same-origin',
+    headers: { ...csrfHeaders() },
   });
 
   return handleResponse(res);

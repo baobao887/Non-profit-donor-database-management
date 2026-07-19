@@ -16,6 +16,9 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+// All state-changing requests must carry a valid CSRF token (GET passes through)
+requireApiCsrf();
+
 try {
     $pdo = getDB();
     $donorModel = new Donor($pdo);
@@ -28,16 +31,19 @@ try {
         if ($action === 'list') {
             $page = (int)($_GET['page'] ?? 1);
             $status = $_GET['status'] ?? null;
-            $donors = $donorModel->getAll($page, ITEMS_PER_PAGE, $status);
+            // Optional capped page size so list pages and form dropdowns can
+            // load the full dataset instead of silently seeing only page 1.
+            $limit = min(1000, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $donors = $donorModel->getAll($page, $limit, $status);
             $total = $donorModel->getTotalCount($status);
-            
+
             echo json_encode([
                 'donors' => $donors,
                 'total' => $total,
                 'page' => $page,
-                'limit' => ITEMS_PER_PAGE
+                'limit' => $limit
             ]);
-        } 
+        }
         elseif ($action === 'get' && isset($_GET['id'])) {
             $donor = $donorModel->getById((int)$_GET['id']);
             if ($donor) {
@@ -134,6 +140,14 @@ try {
                 throw new Exception('Invalid email format');
             }
 
+            if (!empty($phone) && !validatePhone($phone)) {
+                throw new Exception('Invalid phone format');
+            }
+
+            if (!in_array($status, DONOR_STATUSES)) {
+                throw new Exception('Invalid donor status');
+            }
+
             $donorModel->update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes);
             
             logActivity(getCurrentUserId(), 'update', "Updated donor: $firstName $lastName", 'donor', $donorId);
@@ -184,8 +198,15 @@ try {
         echo json_encode(['error' => 'Method not allowed']);
     }
     
+} catch (PDOException $e) {
+    // Never leak raw SQL error details to the client
+    error_log('Donors API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'A server error occurred. Please try again.']);
 } catch (Exception $e) {
-    http_response_code(400);
+    if (http_response_code() === 200) {
+        http_response_code(400);
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

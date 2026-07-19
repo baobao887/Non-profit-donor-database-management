@@ -45,18 +45,25 @@ if (!checkSession()) {
       <section class="card-glass p-6 overflow-hidden mb-8">
         <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div><h3 class="text-xl font-semibold">Transaction feed</h3><p class="text-slate-500">Filter and audit donations.</p></div>
-          <select id="filterStatus" class="input-glass w-auto min-w-[160px]" aria-label="Filter by status">
-            <option value="all">All statuses</option>
-            <option value="Succeeded">Succeeded</option>
-            <option value="Pending">Pending</option>
-            <option value="Processing">Processing</option>
-            <option value="Refunded">Refunded</option>
-          </select>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative">
+              <i class="fa-solid fa-search text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+              <input type="search" id="donationSearch" placeholder="Search by donor or campaign..." class="input-glass w-64 pl-11" aria-label="Search by donor or campaign" />
+            </div>
+            <select id="filterStatus" class="input-glass w-auto min-w-[160px]" aria-label="Filter by status">
+              <option value="all">All statuses</option>
+              <option value="Succeeded">Succeeded</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Failed">Failed</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
         </div>
         <div class="overflow-x-auto table-scroll">
           <table class="min-w-full text-left border-separate border-spacing-y-3">
             <thead class="text-slate-500 text-sm uppercase tracking-[0.18em]">
-              <tr><th class="pb-3 pl-6">Donation</th><th class="pb-3">Donor</th><th class="pb-3">Date</th><th class="pb-3">Amount</th><th class="pb-3">Method</th><th class="pb-3">Status</th><th class="pb-3 pr-6">Receipt</th></tr>
+              <tr><th class="pb-3 pl-6">Donation</th><th class="pb-3">Donor</th><th class="pb-3">Date</th><th class="pb-3">Amount</th><th class="pb-3">Method</th><th class="pb-3">Status</th><th class="pb-3 pr-6">Actions</th></tr>
             </thead>
             <tbody id="donations-table-body"></tbody>
           </table>
@@ -94,6 +101,29 @@ if (!checkSession()) {
         <div class="flex gap-3 mt-6">
           <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
           <button type="button" data-close-modal="donationModal" class="btn-secondary flex-1 py-3 rounded-2xl">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="donationEditModal" class="modal">
+    <div class="modal-backdrop" data-close-modal="donationEditModal"></div>
+    <div class="modal-panel" role="dialog">
+      <h3 class="text-xl font-semibold mb-1">Edit donation</h3>
+      <p id="editDonationContext" class="text-slate-500 text-sm mb-5"></p>
+      <form id="donationEditForm">
+        <input type="hidden" id="editDonationId" />
+        <div class="form-field"><label for="editDonationAmount">Amount (₱)</label><input id="editDonationAmount" type="number" min="1" step="0.01" class="input-glass" required /></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="editDonationMethod">Method</label>
+            <select id="editDonationMethod" class="input-glass"><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
+          </div>
+          <div class="form-field"><label for="editDonationStatus">Status</label>
+            <select id="editDonationStatus" class="input-glass"><option>Succeeded</option><option>Pending</option><option>Processing</option><option>Failed</option><option>Refunded</option></select>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
+          <button type="button" data-close-modal="donationEditModal" class="btn-secondary flex-1 py-3 rounded-2xl">Cancel</button>
         </div>
       </form>
     </div>

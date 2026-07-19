@@ -30,13 +30,19 @@ try {
     }
     
     // Authenticate user
-    $user = authenticateUser($email, $password);
-    
-    if (!$user) {
+    $auth = authenticateUser($email, $password);
+
+    if (!$auth['success']) {
+        if ($auth['error'] === 'locked') {
+            http_response_code(429);
+            die(json_encode(['error' => 'Account temporarily locked due to repeated failed attempts. Try again in ' . LOGIN_LOCKOUT_MINUTES . ' minutes.']));
+        }
         http_response_code(401);
         die(json_encode(['error' => 'Invalid email or password']));
     }
-    
+
+    $user = $auth['user'];
+
     // Check user status
     if ($user['status'] !== USER_STATUS_ACTIVE) {
         http_response_code(403);

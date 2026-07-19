@@ -18,6 +18,9 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+// All state-changing requests must carry a valid CSRF token (GET passes through)
+requireApiCsrf();
+
 try {
     $pdo = getDB();
     $donationModel = new Donation($pdo);
@@ -31,14 +34,17 @@ try {
     if ($method === 'GET') {
         if ($action === 'list') {
             $page = (int)($_GET['page'] ?? 1);
-            $donations = $donationModel->getAll($page, ITEMS_PER_PAGE);
+            // Optional capped page size so list pages and form dropdowns can
+            // load the full dataset instead of silently seeing only page 1.
+            $limit = min(1000, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $donations = $donationModel->getAll($page, $limit);
             $total = $donationModel->getTotalCount();
-            
+
             echo json_encode([
                 'donations' => $donations,
                 'total' => $total,
                 'page' => $page,
-                'limit' => ITEMS_PER_PAGE
+                'limit' => $limit
             ]);
         }
         elseif ($action === 'get' && isset($_GET['id'])) {
@@ -95,29 +101,38 @@ try {
             $amount = (float)($data['amount'] ?? 0);
             $donationDate = $data['donation_date'] ?? date(DATE_FORMAT);
             $paymentMethod = $data['payment_method'] ?? 'Card';
-            
+            $paymentStatus = $data['payment_status'] ?? DONATION_STATUS_SUCCEEDED;
+
             if (!$donorId || !$campaignId) {
                 throw new Exception('Donor ID and Campaign ID are required');
             }
-            
+
             if ($amount <= 0) {
                 throw new Exception('Amount must be greater than 0');
             }
-            
+
             if (!in_array($paymentMethod, PAYMENT_METHODS)) {
                 throw new Exception('Invalid payment method');
             }
-            
+
+            if (!in_array($paymentStatus, DONATION_STATUSES)) {
+                throw new Exception('Invalid payment status');
+            }
+
+            if (!validateDate($donationDate)) {
+                throw new Exception('Invalid donation date (expected YYYY-MM-DD)');
+            }
+
             // Verify donor and campaign exist
             if (!$donorModel->getById($donorId)) {
                 throw new Exception('Donor not found');
             }
-            
+
             if (!$campaignModel->getById($campaignId)) {
                 throw new Exception('Campaign not found');
             }
-            
-            $donationId = $donationModel->create($donorId, $campaignId, $amount, $donationDate, $paymentMethod);
+
+            $donationId = $donationModel->create($donorId, $campaignId, $amount, $donationDate, $paymentMethod, $paymentStatus);
             
             logActivity(getCurrentUserId(), 'create', "Created donation: $" . $amount . " from donor #$donorId", 'donation', $donationId);
             
@@ -151,11 +166,19 @@ try {
             $amount = (float)($data['amount'] ?? $donation['amount']);
             $paymentMethod = $data['payment_method'] ?? $donation['payment_method'];
             $paymentStatus = $data['payment_status'] ?? $donation['payment_status'];
-            
+
             if ($amount <= 0) {
                 throw new Exception('Amount must be greater than 0');
             }
-            
+
+            if (!in_array($paymentMethod, PAYMENT_METHODS)) {
+                throw new Exception('Invalid payment method');
+            }
+
+            if (!in_array($paymentStatus, DONATION_STATUSES)) {
+                throw new Exception('Invalid payment status');
+            }
+
             $donationModel->update($donationId, $amount, $paymentMethod, $paymentStatus);
             
             logActivity(getCurrentUserId(), 'update', "Updated donation #$donationId", 'donation', $donationId);
@@ -197,8 +220,15 @@ try {
         echo json_encode(['error' => 'Method not allowed']);
     }
     
+} catch (PDOException $e) {
+    // Never leak raw SQL error details to the client
+    error_log('Donations API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'A server error occurred. Please try again.']);
 } catch (Exception $e) {
-    http_response_code(400);
+    if (http_response_code() === 200) {
+        http_response_code(400);
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

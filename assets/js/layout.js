@@ -1,4 +1,5 @@
 import { initials, openModal, closeModal } from './utils.js';
+import { csrfHeaders } from './api.js';
 
 const NAV_ITEMS = [
   { href: 'dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },
@@ -198,7 +199,7 @@ async function submitChangePassword(e) {
     const res = await fetch('api/account.php?action=change-password', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ current_password: current, new_password: next, confirm_password: confirm }),
     });
     const data = await res.json();

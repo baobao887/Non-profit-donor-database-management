@@ -83,6 +83,13 @@ class User {
      * Update user
      */
     public function update($userId, $firstName, $lastName, $email, $role, $status) {
+        // Mirror create()'s uniqueness check so a duplicate email surfaces
+        // as a clear validation error, not a database constraint failure.
+        $existing = $this->getByEmail($email);
+        if ($existing && (int)$existing['user_id'] !== (int)$userId) {
+            throw new Exception('Email already exists');
+        }
+
         $stmt = $this->pdo->prepare("
             UPDATE users
             SET first_name = ?, last_name = ?, email = ?, role = ?, status = ?, updated_at = NOW()

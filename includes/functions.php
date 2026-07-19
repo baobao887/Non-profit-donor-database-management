@@ -44,8 +44,18 @@ function validateEmail($email) {
  * Validate phone (basic)
  */
 function validatePhone($phone) {
-    $phone = preg_replace('/[^0-9+\- ]/', '', $phone);
-    return strlen($phone) >= 10;
+    $digits = preg_replace('/\D/', '', $phone);
+    return strlen($digits) >= 7;
+}
+
+/**
+ * Validate a date string strictly against a format (default Y-m-d).
+ * Rejects garbage like "not-a-date" and impossible dates like 2026-02-30,
+ * which MariaDB would otherwise coerce to 0000-00-00 in non-strict mode.
+ */
+function validateDate($date, $format = 'Y-m-d') {
+    $d = DateTime::createFromFormat($format, $date);
+    return $d !== false && $d->format($format) === $date;
 }
 
 /**
@@ -237,6 +247,21 @@ function generateCSRFToken() {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
     return $_SESSION['csrf_token'];
+}
+
+/**
+ * Reject state-changing API requests that lack a valid CSRF token.
+ * The frontend (assets/js/api.js) reads the token from the <meta
+ * name="csrf-token"> tag in includes/header.php and sends it back as an
+ * X-CSRF-Token header on every POST/PUT/DELETE. GET requests pass through.
+ */
+function requireApiCsrf() {
+    if (!in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+        return;
+    }
+    if (!validateCSRFToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        errorResponse('Invalid CSRF token', 403);
+    }
 }
 
 /**

@@ -19,6 +19,9 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+// All state-changing requests must carry a valid CSRF token (GET passes through)
+requireApiCsrf();
+
 try {
     $pdo = getDB();
 
@@ -75,8 +78,15 @@ try {
         echo json_encode(['error' => 'Method not allowed']);
     }
 
+} catch (PDOException $e) {
+    // Never leak raw SQL error details to the client
+    error_log('Account API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'A server error occurred. Please try again.']);
 } catch (Exception $e) {
-    http_response_code(400);
+    if (http_response_code() === 200) {
+        http_response_code(400);
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

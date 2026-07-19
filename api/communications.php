@@ -16,6 +16,9 @@ if (!checkSession()) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
+// All state-changing requests must carry a valid CSRF token (GET passes through)
+requireApiCsrf();
+
 try {
     $pdo = getDB();
     $communicationModel = new Communication($pdo);
@@ -68,17 +71,28 @@ try {
             $donorId = (int)($data['donor_id'] ?? 0);
             $type = $data['type'] ?? 'Email outreach';
             $content = trim($data['content'] ?? '');
-            $staffId = (int)($_SESSION['user_id'] ?? 0);
-            
+            $status = $data['status'] ?? 'Draft';
+            // Attribution comes from the authenticated session, never from
+            // the request body - a client must not log notes as someone else.
+            $staffId = getCurrentUserId();
+
             if (!$donorId) {
                 throw new Exception('Donor ID is required');
             }
-            
+
             if (empty($content)) {
                 throw new Exception('Content is required');
             }
-            
-            $communicationId = $communicationModel->create($donorId, $type, $content, $staffId);
+
+            if (!in_array($status, COMMUNICATION_STATUSES)) {
+                throw new Exception('Invalid status');
+            }
+
+            if (!in_array($type, COMMUNICATION_TYPES)) {
+                throw new Exception('Invalid communication type');
+            }
+
+            $communicationId = $communicationModel->create($donorId, $type, $content, $staffId, $status);
             
             logActivity(getCurrentUserId(), 'create', "Created communication for donor #$donorId", 'communication', $communicationId);
             
@@ -117,7 +131,15 @@ try {
             if (empty($content)) {
                 throw new Exception('Content is required');
             }
-            
+
+            if (!in_array($type, COMMUNICATION_TYPES)) {
+                throw new Exception('Invalid communication type');
+            }
+
+            if (!in_array($status, COMMUNICATION_STATUSES)) {
+                throw new Exception('Invalid status');
+            }
+
             $communicationModel->update($communicationId, $type, $content, $status, $staffId);
             
             logActivity(getCurrentUserId(), 'update', "Updated communication #$communicationId", 'communication', $communicationId);
@@ -185,8 +207,15 @@ try {
         echo json_encode(['error' => 'Method not allowed']);
     }
     
+} catch (PDOException $e) {
+    // Never leak raw SQL error details to the client
+    error_log('Communications API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'A server error occurred. Please try again.']);
 } catch (Exception $e) {
-    http_response_code(400);
+    if (http_response_code() === 200) {
+        http_response_code(400);
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>
