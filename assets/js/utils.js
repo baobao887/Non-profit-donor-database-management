@@ -73,6 +73,27 @@ export function exportCsv(filename, rows, columns) {
   URL.revokeObjectURL(link.href);
 }
 
+/**
+ * Inline form error banner (same visual pattern as the login page).
+ * Convention: a form with id="xForm" has a banner div id="xFormError"
+ * containing a span id="xFormErrorText" in its view.
+ */
+export function showFormError(formId, message) {
+  const banner = document.getElementById(`${formId}Error`);
+  const text = document.getElementById(`${formId}ErrorText`);
+  if (!banner || !text) return;
+  text.textContent = message;
+  banner.classList.remove('hidden');
+  banner.classList.add('fade-in');
+}
+
+export function hideFormError(formId) {
+  const banner = document.getElementById(`${formId}Error`);
+  if (!banner) return;
+  banner.classList.add('hidden');
+  banner.classList.remove('fade-in');
+}
+
 export function openModal(id) {
   document.getElementById(id)?.classList.add('modal-open');
   document.body.classList.add('modal-active');

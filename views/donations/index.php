@@ -23,7 +23,7 @@ if (!checkSession()) {
           <h2 class="text-3xl font-semibold tracking-tight">Donation history</h2>
         </div>
         <div class="flex items-center gap-3">
-          <button type="button" id="exportDonations" class="btn-secondary px-4 py-3 rounded-2xl">Export CSV</button>
+          <button type="button" id="exportDonations" class="btn-secondary px-4 py-3 rounded-2xl">Export page</button>
           <button type="button" id="openAddDonation" class="btn-primary px-5 py-3 rounded-2xl bg-sky-600 text-white">Log donation</button>
         </div>
       </header>
@@ -68,6 +68,13 @@ if (!checkSession()) {
             <tbody id="donations-table-body"></tbody>
           </table>
         </div>
+        <div class="mt-6 flex items-center justify-between text-slate-600 text-sm">
+          <span id="donationShowingInfo">Showing —</span>
+          <div class="inline-flex gap-2">
+            <button type="button" id="donationPrevPage" class="btn-secondary px-4 py-2 rounded-3xl">Previous</button>
+            <button type="button" id="donationNextPage" class="btn-secondary px-4 py-2 rounded-3xl">Next</button>
+          </div>
+        </div>
       </section>
       <section class="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <div class="card-glass p-6 shadow-xl rounded-[28px]">
@@ -86,13 +93,19 @@ if (!checkSession()) {
     <div class="modal-panel" role="dialog">
       <h3 class="text-xl font-semibold mb-5">Log donation</h3>
       <form id="donationForm">
+        <div id="donationFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="donationFormErrorText"></span>
+          </div>
+        </div>
         <div class="form-field"><label for="donationDonor">Donor</label><select id="donationDonor" class="input-glass" required></select></div>
         <div class="form-field"><label for="donationCampaign">Campaign</label><select id="donationCampaign" class="input-glass" required></select></div>
         <div class="form-field"><label for="donationAmount">Amount (₱)</label><input id="donationAmount" type="number" min="1" step="0.01" class="input-glass" required /></div>
         <div class="form-field"><label for="donationDate">Date</label><input id="donationDate" type="date" class="input-glass" required /></div>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field"><label for="donationMethod">Method</label>
-            <select id="donationMethod" class="input-glass"><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
+            <select id="donationMethod" class="input-glass"><option>Cash</option><option>GCash</option><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
           </div>
           <div class="form-field"><label for="donationStatus">Status</label>
             <select id="donationStatus" class="input-glass"><option>Succeeded</option><option>Pending</option><option>Processing</option></select>
@@ -112,10 +125,16 @@ if (!checkSession()) {
       <p id="editDonationContext" class="text-slate-500 text-sm mb-5"></p>
       <form id="donationEditForm">
         <input type="hidden" id="editDonationId" />
+        <div id="donationEditFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="donationEditFormErrorText"></span>
+          </div>
+        </div>
         <div class="form-field"><label for="editDonationAmount">Amount (₱)</label><input id="editDonationAmount" type="number" min="1" step="0.01" class="input-glass" required /></div>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field"><label for="editDonationMethod">Method</label>
-            <select id="editDonationMethod" class="input-glass"><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
+            <select id="editDonationMethod" class="input-glass"><option>Cash</option><option>GCash</option><option>Card</option><option>Bank Transfer</option><option>PayPal</option><option>Check</option></select>
           </div>
           <div class="form-field"><label for="editDonationStatus">Status</label>
             <select id="editDonationStatus" class="input-glass"><option>Succeeded</option><option>Pending</option><option>Processing</option><option>Failed</option><option>Refunded</option></select>

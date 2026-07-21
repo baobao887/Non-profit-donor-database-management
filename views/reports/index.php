@@ -65,6 +65,25 @@ if (!checkSession()) {
           </div>
         </div>
       </section>
+      <!-- Donor demographics: who gives more, by gender / location / age.
+           Aggregate figures only; donors with no value are shown as "Not specified". -->
+      <section class="grid gap-6 mt-8 xl:grid-cols-3">
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-1">Giving by gender</h3>
+          <p class="text-slate-500 text-sm mb-4">Total donations received per donor gender.</p>
+          <canvas id="genderChart" class="chart-canvas-compact" height="180"></canvas>
+        </div>
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-1">Top locations</h3>
+          <p class="text-slate-500 text-sm mb-4">Highest-giving donor cities.</p>
+          <div class="space-y-4" id="location-breakdown"></div>
+        </div>
+        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+          <h3 class="text-xl font-semibold mb-1">Giving by age group</h3>
+          <p class="text-slate-500 text-sm mb-4">Total donations received per donor age bracket.</p>
+          <div class="space-y-4" id="age-breakdown"></div>
+        </div>
+      </section>
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

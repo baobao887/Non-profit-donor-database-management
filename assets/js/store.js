@@ -99,20 +99,75 @@ export async function getStats() {
 /**
  * Donor Functions
  */
-export async function getDonors(page = 1, status = null) {
+/**
+ * Fetch one page of donors with server-side search/filter/pagination.
+ * Returns { donors, total, page, limit } so callers can render "Page X of Y".
+ */
+export async function getDonors({ page = 1, limit = 25, search = '', status = '', rank = '' } = {}) {
   try {
-    let url = `api/donors.php?action=list&page=${page}&limit=1000`;
-    if (status) url += `&status=${status}`;
-    const res = await fetch(url);
+    const params = new URLSearchParams({ action: 'list', page, limit });
+    if (search) params.set('search', search);
+    if (status && status !== 'all') params.set('status', status);
+    if (rank && rank !== 'all') params.set('rank', rank);
+    const res = await fetch(`api/donors.php?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch donors');
     const data = await res.json();
     cache.donors = data.donors || [];
-    return cache.donors;
+    return { donors: cache.donors, total: data.total || 0, page: data.page || page, limit: data.limit || limit };
   } catch (error) {
     reportLoadFailure();
     console.error('Error fetching donors:', error);
+    return { donors: [], total: 0, page, limit };
+  }
+}
+
+/**
+ * Lightweight id + name list for donor dropdowns (donation/communication
+ * forms). Kept separate from the paginated getDonors() so a form select
+ * doesn't trigger a bulk fetch of full donor rows.
+ */
+export async function getDonorOptions() {
+  try {
+    const res = await fetch('api/donors.php?action=options');
+    if (!res.ok) throw new Error('Failed to fetch donor options');
+    const data = await res.json();
+    return data.donors || [];
+  } catch (error) {
+    reportLoadFailure();
+    console.error('Error fetching donor options:', error);
     return [];
   }
+}
+
+/**
+ * Server-computed donor summary (Silver/Gold counts + lifetime total) for the
+ * donors page sidebar — correct regardless of which page is displayed.
+ */
+export async function getDonorSummary() {
+  try {
+    const res = await fetch('api/donors.php?action=summary');
+    if (!res.ok) throw new Error('Failed to fetch donor summary');
+    return await res.json();
+  } catch (error) {
+    reportLoadFailure();
+    console.error('Error fetching donor summary:', error);
+    return { silver: 0, gold: 0, lifetime: 0 };
+  }
+}
+
+/**
+ * Full filtered donor set for CSV export (all matching rows, not just the
+ * current page). Applies the same search/status/rank filters as the list.
+ */
+export async function getDonorsForExport({ search = '', status = '', rank = '' } = {}) {
+  const params = new URLSearchParams({ action: 'export' });
+  if (search) params.set('search', search);
+  if (status && status !== 'all') params.set('status', status);
+  if (rank && rank !== 'all') params.set('rank', rank);
+  const res = await fetch(`api/donors.php?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to export donors');
+  const data = await res.json();
+  return data.donors || [];
 }
 
 export async function getDonor(id) {
@@ -158,8 +213,8 @@ export async function addDonor(donor) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(donor)
     });
-    if (!res.ok) throw new Error('Failed to create donor');
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create donor');
     return data.donor_id;
   } catch (error) {
     console.error('Error adding donor:', error);
@@ -174,7 +229,8 @@ export async function updateDonor(id, updates) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donor_id: id, ...updates })
     });
-    if (!res.ok) throw new Error('Failed to update donor');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update donor');
     return true;
   } catch (error) {
     console.error('Error updating donor:', error);
@@ -189,7 +245,8 @@ export async function deleteDonor(id) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donor_id: id })
     });
-    if (!res.ok) throw new Error('Failed to archive donor');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to archive donor');
     return true;
   } catch (error) {
     console.error('Error archiving donor:', error);
@@ -200,6 +257,10 @@ export async function deleteDonor(id) {
 /**
  * Campaign Functions
  */
+// Campaigns intentionally stay client-side: an organization has dozens of
+// campaigns, not millions, so bulk-loading them (limit=1000) and
+// filtering/paginating in JS is fine here. Donors and donations — which grow
+// unbounded — use true server-side pagination instead (see getDonors/getDonations).
 export async function getCampaigns(page = 1, status = null) {
   try {
     let url = `api/campaigns.php?action=list&page=${page}&limit=1000`;
@@ -247,8 +308,8 @@ export async function addCampaign(campaign) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(campaign)
     });
-    if (!res.ok) throw new Error('Failed to create campaign');
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create campaign');
     return data.campaign_id;
   } catch (error) {
     console.error('Error adding campaign:', error);
@@ -263,7 +324,8 @@ export async function updateCampaign(id, updates) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ campaign_id: id, ...updates })
     });
-    if (!res.ok) throw new Error('Failed to update campaign');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update campaign');
     return true;
   } catch (error) {
     console.error('Error updating campaign:', error);
@@ -294,7 +356,8 @@ export async function updateCampaignStatus(id, status) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ campaign_id: id, status })
     });
-    if (!res.ok) throw new Error('Failed to update campaign status');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update campaign status');
     return true;
   } catch (error) {
     console.error('Error updating campaign status:', error);
@@ -305,17 +368,41 @@ export async function updateCampaignStatus(id, status) {
 /**
  * Donation Functions
  */
-export async function getDonations(page = 1) {
+/**
+ * Fetch one page of donations with server-side search/status filter and
+ * pagination. Rows include donor + campaign names. Returns
+ * { donations, total, page, limit }.
+ */
+export async function getDonations({ page = 1, limit = 25, search = '', status = '' } = {}) {
   try {
-    const res = await fetch(`api/donations.php?action=list&page=${page}&limit=1000`);
+    const params = new URLSearchParams({ action: 'list', page, limit });
+    if (search) params.set('search', search);
+    if (status && status !== 'all') params.set('status', status);
+    const res = await fetch(`api/donations.php?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch donations');
     const data = await res.json();
     cache.donations = data.donations || [];
-    return cache.donations;
+    return { donations: cache.donations, total: data.total || 0, page: data.page || page, limit: data.limit || limit };
   } catch (error) {
     reportLoadFailure();
     console.error('Error fetching donations:', error);
-    return [];
+    return { donations: [], total: 0, page, limit };
+  }
+}
+
+/**
+ * Server-computed donation stats (revenue, average gift, refund rate) for the
+ * donations page header cards — correct regardless of which page is displayed.
+ */
+export async function getDonationStats() {
+  try {
+    const res = await fetch('api/donations.php?action=stats');
+    if (!res.ok) throw new Error('Failed to fetch donation stats');
+    return await res.json();
+  } catch (error) {
+    reportLoadFailure();
+    console.error('Error fetching donation stats:', error);
+    return { revenue: 0, average: 0, refundRate: 0 };
   }
 }
 
@@ -398,8 +485,8 @@ export async function addDonation(donation) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(donation)
     });
-    if (!res.ok) throw new Error('Failed to create donation');
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create donation');
     return data.donation_id;
   } catch (error) {
     console.error('Error adding donation:', error);
@@ -414,7 +501,8 @@ export async function updateDonation(id, updates) {
       headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ donation_id: id, ...updates })
     });
-    if (!res.ok) throw new Error('Failed to update donation');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update donation');
     return true;
   } catch (error) {
     console.error('Error updating donation:', error);

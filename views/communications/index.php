@@ -44,6 +44,12 @@ if (!checkSession()) {
       <h3 id="commModalTitle" class="text-xl font-semibold mb-5">New communication</h3>
       <form id="commForm">
         <input type="hidden" id="commId" value="" />
+        <div id="commFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="commFormErrorText"></span>
+          </div>
+        </div>
         <div class="form-field"><label for="commType">Type</label>
           <select id="commType" class="input-glass"><option>Email outreach</option><option>Call logged</option><option>Meeting note</option><option>Thank you</option><option>Other</option></select>
         </div>

@@ -33,9 +33,23 @@ if (!checkSession()) {
       <h2 id="staffTitle" class="text-xl font-semibold mb-5">Add staff member</h2>
       <form id="staffForm">
         <input id="staffId" type="hidden">
-        <div class="form-field"><label>Name</label><input id="staffName" class="input-glass" required></div>
-        <div class="form-field"><label>Email</label><input id="staffEmail" type="email" class="input-glass" required></div>
-        <div class="form-field"><label>Role</label><input id="staffRole" class="input-glass" required></div>
+        <div id="staffFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="staffFormErrorText"></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="staffFirstName">First name</label><input id="staffFirstName" class="input-glass" required></div>
+          <div class="form-field"><label for="staffLastName">Last name</label><input id="staffLastName" class="input-glass" required></div>
+        </div>
+        <div class="form-field"><label for="staffEmail">Email</label><input id="staffEmail" type="email" class="input-glass" required></div>
+        <div class="form-field"><label for="staffRole">Role</label>
+          <select id="staffRole" class="input-glass" required>
+            <option value="Staff">Staff</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
         <div class="flex gap-3 mt-6">
           <button class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
           <button type="button" class="btn-secondary flex-1 py-3 rounded-2xl" data-close-modal="staffModal">Cancel</button>

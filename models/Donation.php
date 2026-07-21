@@ -36,6 +36,96 @@ class Donation {
     }
     
     /**
+     * Build the shared WHERE clause + bound params for the filtered list/count
+     * below. Search matches donor name or campaign name; status is an optional
+     * exact match. All terms are parameterized.
+     */
+    private function buildFilters($search, $status) {
+        $clauses = [];
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $like = '%' . $search . '%';
+            $clauses[] = "(do.first_name LIKE ? OR do.last_name LIKE ? OR CONCAT(do.first_name, ' ', do.last_name) LIKE ? OR c.campaign_name LIKE ?)";
+            array_push($params, $like, $like, $like, $like);
+        }
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            $clauses[] = "d.payment_status = ?";
+            $params[] = $status;
+        }
+
+        $where = $clauses ? ('WHERE ' . implode(' AND ', $clauses)) : '';
+        return [$where, $params];
+    }
+
+    /**
+     * Paginated donations with search + status filter. Joins donor and
+     * campaign names into each row so the list renders without bulk-loading
+     * the full donor/campaign tables client-side.
+     */
+    public function getFiltered($page, $limit, $search = '', $status = null) {
+        $offset = ($page - 1) * $limit;
+        [$where, $params] = $this->buildFilters($search, $status);
+        $sql = "
+            SELECT d.*, do.first_name, do.last_name, c.campaign_name
+            FROM donations d
+            JOIN donors do ON d.donor_id = do.donor_id
+            JOIN campaigns c ON d.campaign_id = c.campaign_id
+            $where
+            ORDER BY d.donation_date DESC, d.created_at DESC
+            LIMIT ? OFFSET ?
+        ";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Total rows matching the same filters, for "Page X of Y" display.
+     */
+    public function countFiltered($search = '', $status = null) {
+        [$where, $params] = $this->buildFilters($search, $status);
+        $sql = "
+            SELECT COUNT(*) AS count
+            FROM donations d
+            JOIN donors do ON d.donor_id = do.donor_id
+            JOIN campaigns c ON d.campaign_id = c.campaign_id
+            $where
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+        return (int)$row['count'];
+    }
+
+    /**
+     * Header-card stats (revenue, average gift, refund rate) computed
+     * server-side so they stay correct once the list is paginated.
+     */
+    public function getStats() {
+        $stmt = $this->pdo->query("
+            SELECT
+                COALESCE(SUM(CASE WHEN payment_status = 'Succeeded' THEN amount END), 0) AS revenue,
+                COUNT(CASE WHEN payment_status = 'Succeeded' THEN 1 END) AS succeeded_count,
+                COUNT(CASE WHEN payment_status = 'Refunded' THEN 1 END) AS refunded_count,
+                COUNT(*) AS total_count
+            FROM donations
+        ");
+        $row = $stmt->fetch();
+        $revenue = (float)$row['revenue'];
+        $succeeded = (int)$row['succeeded_count'];
+        $refunded = (int)$row['refunded_count'];
+        $totalCount = (int)$row['total_count'];
+        return [
+            'revenue' => $revenue,
+            'average' => $succeeded > 0 ? round($revenue / $succeeded) : 0,
+            'refundRate' => $totalCount > 0 ? round(($refunded / $totalCount) * 100, 1) : 0,
+        ];
+    }
+
+    /**
      * Get recent donations
      */
     public function getRecent($limit = 10) {
@@ -268,6 +358,71 @@ class Donation {
             FROM donations
             GROUP BY DAYOFWEEK(donation_date)
             ORDER BY dow
+        ");
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Giving by donor gender: total amount and count of Succeeded donations
+     * grouped by the donor's (optional) gender. Donors with no gender on file
+     * are grouped as "Not specified" so the buckets still sum to the overall
+     * Succeeded total.
+     */
+    public function getGenderBreakdown() {
+        $stmt = $this->pdo->query("
+            SELECT COALESCE(NULLIF(do.gender, ''), 'Not specified') AS gender,
+                   COUNT(*) AS count,
+                   SUM(d.amount) AS total
+            FROM donations d
+            JOIN donors do ON d.donor_id = do.donor_id
+            WHERE d.payment_status = 'Succeeded'
+            GROUP BY COALESCE(NULLIF(do.gender, ''), 'Not specified')
+            ORDER BY total DESC
+        ");
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Giving by location: top 10 cities by total Succeeded donations. Donors
+     * with no city on file are grouped as "Not specified".
+     */
+    public function getCityBreakdown($limit = 10) {
+        $stmt = $this->pdo->prepare("
+            SELECT COALESCE(NULLIF(do.city, ''), 'Not specified') AS city,
+                   COUNT(*) AS count,
+                   SUM(d.amount) AS total
+            FROM donations d
+            JOIN donors do ON d.donor_id = do.donor_id
+            WHERE d.payment_status = 'Succeeded'
+            GROUP BY COALESCE(NULLIF(do.city, ''), 'Not specified')
+            ORDER BY total DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Giving by age group: total amount and count of Succeeded donations by
+     * the donor's age bracket, computed from birthdate. Donors with no
+     * birthdate are skipped (they can't be placed in a bracket).
+     */
+    public function getAgeBracketBreakdown() {
+        $stmt = $this->pdo->query("
+            SELECT bracket, COUNT(*) AS count, SUM(amount) AS total
+            FROM (
+                SELECT d.amount,
+                    CASE
+                        WHEN TIMESTAMPDIFF(YEAR, do.birthdate, CURDATE()) BETWEEN 18 AND 30 THEN '18-30'
+                        WHEN TIMESTAMPDIFF(YEAR, do.birthdate, CURDATE()) BETWEEN 31 AND 45 THEN '31-45'
+                        WHEN TIMESTAMPDIFF(YEAR, do.birthdate, CURDATE()) BETWEEN 46 AND 60 THEN '46-60'
+                        ELSE '60+'
+                    END AS bracket
+                FROM donations d
+                JOIN donors do ON d.donor_id = do.donor_id
+                WHERE d.payment_status = 'Succeeded' AND do.birthdate IS NOT NULL
+            ) t
+            GROUP BY bracket
         ");
         return $stmt->fetchAll();
     }

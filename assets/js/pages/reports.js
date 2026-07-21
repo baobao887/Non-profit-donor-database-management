@@ -22,6 +22,9 @@ async function init() {
     renderDonorPieChart(report.donorRankBreakdown);
     renderPaymentBreakdown(report.paymentBreakdown);
     renderHeatmap(report.weekdayActivity);
+    renderGenderChart(report.genderBreakdown);
+    renderLocationBreakdown(report.cityBreakdown);
+    renderAgeBreakdown(report.ageBreakdown);
   } catch (err) {
     console.error('Reports load failed:', err);
     renderError(document.getElementById('payment-breakdown'), 'Could not load report data.');
@@ -75,7 +78,7 @@ function renderPaymentBreakdown(methods = []) {
   if (!container) return;
 
   const total = methods.reduce((s, m) => s + Number(m.count), 0) || 1;
-  const colors = { Card: 'bg-sky-500', 'Bank Transfer': 'bg-emerald-500', PayPal: 'bg-violet-500', Check: 'bg-amber-500' };
+  const colors = { Cash: 'bg-teal-500', GCash: 'bg-blue-600', Card: 'bg-sky-500', 'Bank Transfer': 'bg-emerald-500', PayPal: 'bg-violet-500', Check: 'bg-amber-500' };
   container.innerHTML = methods.length ? methods.map((m) => {
     const pct = Math.round((Number(m.count) / total) * 100);
     const color = colors[m.payment_method] || 'bg-slate-400';
@@ -83,6 +86,59 @@ function renderPaymentBreakdown(methods = []) {
       <div class="flex items-center justify-between text-sm text-slate-600"><span>${m.payment_method}</span><span>${pct}%</span></div>
       <div class="rounded-full bg-slate-200 h-3 overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${pct}%"></div></div>`;
   }).join('') : '<p class="text-slate-500">No donations recorded yet.</p>';
+}
+
+// Giving by gender — doughnut of total donations received per gender.
+// NULL genders arrive from the API already grouped as "Not specified".
+function renderGenderChart(breakdown = []) {
+  if (typeof Chart === 'undefined') return;
+  const chart = Chart.getChart('genderChart');
+  if (!chart || !breakdown.length) return;
+  chart.data.labels = breakdown.map((b) => b.gender);
+  chart.data.datasets[0].data = breakdown.map((b) => Number(b.total));
+  chart.update();
+}
+
+// Top donor cities by total giving — horizontal bars sized against the
+// highest-giving city, mirroring the "Payment channels" visual pattern.
+function renderLocationBreakdown(cities = []) {
+  const container = document.getElementById('location-breakdown');
+  if (!container) return;
+  const max = Math.max(...cities.map((c) => Number(c.total)), 1);
+  container.innerHTML = cities.length ? cities.map((c) => {
+    const pct = Math.round((Number(c.total) / max) * 100);
+    return `
+      <div class="flex items-center justify-between text-sm text-slate-600"><span>${escapeHtml(c.city)}</span><span>${formatCurrency(c.total)} · ${c.count}</span></div>
+      <div class="rounded-full bg-slate-200 h-3 overflow-hidden"><div class="h-full rounded-full bg-sky-500" style="width:${pct}%"></div></div>`;
+  }).join('') : '<p class="text-slate-500">No location data yet.</p>';
+}
+
+const AGE_ORDER = ['18-30', '31-45', '46-60', '60+'];
+
+// Giving by age bracket — bars in fixed age order (donors with no birthdate
+// are excluded server-side, so brackets may not sum to the overall total).
+function renderAgeBreakdown(brackets = []) {
+  const container = document.getElementById('age-breakdown');
+  if (!container) return;
+  const byBracket = Object.fromEntries(brackets.map((b) => [b.bracket, b]));
+  const rows = AGE_ORDER.map((label) => ({
+    label,
+    total: Number(byBracket[label]?.total || 0),
+    count: Number(byBracket[label]?.count || 0),
+  }));
+  const max = Math.max(...rows.map((r) => r.total), 1);
+  container.innerHTML = rows.some((r) => r.total > 0) ? rows.map((r) => {
+    const pct = Math.round((r.total / max) * 100);
+    return `
+      <div class="flex items-center justify-between text-sm text-slate-600"><span>${r.label}</span><span>${formatCurrency(r.total)} · ${r.count}</span></div>
+      <div class="rounded-full bg-slate-200 h-3 overflow-hidden"><div class="h-full rounded-full bg-violet-500" style="width:${pct}%"></div></div>`;
+  }).join('') : '<p class="text-slate-500">No birthdate data yet.</p>';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
 }
 
 function renderHeatmap(weekday = []) {

@@ -39,6 +39,15 @@ CREATE TABLE donors (
     email VARCHAR(255),
     phone VARCHAR(20),
     address TEXT,
+    -- Demographic fields: OPTIONAL (nullable) and collected for aggregate
+    -- analytics only, consistent with data-minimization principles. They are
+    -- never required to process a donation and donors may decline to provide
+    -- them. city/province are the structured, groupable location fields;
+    -- the free-text `address` above keeps street-level detail.
+    gender ENUM('Male', 'Female', 'Prefer not to say') NULL DEFAULT NULL,
+    birthdate DATE NULL DEFAULT NULL,
+    city VARCHAR(100) NULL,
+    province VARCHAR(100) NULL,
     donor_rank ENUM('Bronze', 'Silver', 'Gold', 'Platinum') NOT NULL DEFAULT 'Bronze',
     total_donated DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     status ENUM('Active', 'Inactive', 'Archived') NOT NULL DEFAULT 'Active',
@@ -80,7 +89,7 @@ CREATE TABLE donations (
     campaign_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     donation_date DATE NOT NULL,
-    payment_method ENUM('Card', 'Bank Transfer', 'PayPal', 'Check') NOT NULL DEFAULT 'Card',
+    payment_method ENUM('Cash', 'GCash', 'Card', 'Bank Transfer', 'PayPal', 'Check') NOT NULL DEFAULT 'Cash',
     payment_status ENUM('Pending', 'Succeeded', 'Processing', 'Failed', 'Refunded') NOT NULL DEFAULT 'Pending',
     transaction_id VARCHAR(100),
     notes TEXT,
@@ -132,32 +141,34 @@ CREATE TABLE activity_log (
 
 -- Insert default admin user (password: Admin@123)
 INSERT INTO users (first_name, last_name, email, password_hash, role, status) VALUES
-('Admin', 'User', 'admin@donortrack.com', '$2y$12$4R0z5CxaL7MQZzq.I.KOsuKkN2x5aS9zPGP8Dj6Z7E9qM3K0L2a3O', 'Admin', 'Active');
+('Admin', 'User', 'admin@donortrack.com', '$2y$12$wr.Rhv47k54BKmGdhAJC0.p7ScQsulhtoOfp3Z/9jxNZutHqz115q', 'Admin', 'Active');
 
 -- Insert staff user (password: Staff@123)
 INSERT INTO users (first_name, last_name, email, password_hash, role, status) VALUES
-('Staff', 'Member', 'staff@donortrack.com', '$2y$12$P8nL9E2K0Z7X4V1Q3R5S0T2Y4U6W8A9B3C5D7F9G1H3J5K7L9M1', 'Staff', 'Active');
+('Staff', 'Member', 'staff@donortrack.com', '$2y$12$gfWoCsVySofWHN7jqZnSeOcbNqmAtWChwv5WTd/e4RabHKRQvycY6', 'Staff', 'Active');
 
 -- Insert donors (total_donated and donor_rank are recalculated from donations below)
-INSERT INTO donors (first_name, last_name, email, phone, address, status, notes, created_at) VALUES
-('Maria', 'Santos', 'maria.santos@gmail.com', '+63 917 555 0101', '12 Maginhawa St, Teachers Village, Quezon City', 'Active', 'Prefers email updates. Long-time supporter of education programs.', '2026-01-12 09:30:00'),
-('Jose', 'Ramirez', 'jose.ramirez@yahoo.com', '+63 918 555 0102', 'Unit 8B Salcedo Park Tower, Makati City', 'Active', NULL, '2026-01-20 14:10:00'),
-('Ana', 'Reyes', 'ana.reyes@outlook.com', '+63 916 555 0103', '45 Osmeña Blvd, Cebu City', 'Active', NULL, '2026-02-03 10:45:00'),
-('Paolo', 'Dela Cruz', 'paolo.delacruz@gmail.com', '+63 920 555 0104', '23 C. Raymundo Ave, Pasig City', 'Active', NULL, '2026-02-14 16:20:00'),
-('Grace', 'Lim', 'grace.lim@limholdings.ph', '+63 917 555 0105', '30th Floor, One Bonifacio High Street, Taguig', 'Active', 'Corporate matching donor via Lim Holdings. Interested in water and health projects.', '2026-02-18 11:00:00'),
-('Miguel', 'Tan', 'miguel.tan@gmail.com', '+63 915 555 0106', '88 J.P. Laurel Ave, Davao City', 'Active', NULL, '2026-03-02 08:55:00'),
-('Katrina', 'Villanueva', 'kat.villanueva@gmail.com', '+63 919 555 0107', '17 Shaw Blvd, Mandaluyong City', 'Active', NULL, '2026-03-10 13:40:00'),
-('Ramon', 'Aquino', 'ramon.aquino@aquinolaw.ph', '+63 917 555 0108', 'Suite 1201, Ermita Center, Manila', 'Active', 'Prefers phone calls. Asks for quarterly impact reports.', '2026-03-21 15:25:00'),
-('Lourdes', 'Garcia', 'lourdes.garcia@gmail.com', '+63 921 555 0109', '5 General Luna St, Iloilo City', 'Active', NULL, '2026-04-01 09:05:00'),
-('Benjie', 'Ocampo', 'benjie.ocampo@gmail.com', '+63 922 555 0110', '142 A. Mabini St, Caloocan City', 'Active', NULL, '2026-04-08 17:35:00'),
-('Cheska', 'Uy', 'cheska.uy@uygroup.ph', '+63 917 555 0111', '9 Wilson St, San Juan City', 'Active', 'Introduced by Grace Lim. Focused on youth and education causes.', '2026-04-15 10:15:00'),
-('Andres', 'Bautista', 'andres.bautista@gmail.com', '+63 918 555 0112', '3 Session Road, Baguio City', 'Active', NULL, '2026-04-27 12:50:00'),
-('Isabel', 'Navarro', 'isabel.navarro@gmail.com', '+63 916 555 0113', '27 Escario St, Cebu City', 'Active', NULL, '2026-05-06 14:30:00'),
-('Daniel', 'Cruz', 'dan.cruz@gmail.com', '+63 917 555 0114', '11 Doña Soledad Ave, Parañaque City', 'Active', NULL, '2026-05-19 09:45:00'),
-('Sarah', 'Mercado', 'sarah.mercado@gmail.com', '+63 915 555 0115', '64 Alabang-Zapote Rd, Las Piñas City', 'Active', NULL, '2026-06-02 16:05:00'),
-('Victor', 'Salazar', 'victor.salazar@salazarfoods.ph', '+63 917 555 0116', '2 Marcos Highway, Antipolo City', 'Inactive', 'Paused giving until Q4 2026 — company budget freeze.', '2026-02-25 11:30:00'),
-('Bea', 'Torres', 'bea.torres@gmail.com', '+63 919 555 0117', '35 Gil Fernando Ave, Marikina City', 'Active', NULL, '2026-06-28 13:15:00'),
-('Manuel', 'Robles', 'manuel.robles@gmail.com', '+63 920 555 0118', '50 Rizal Ave, Olongapo City', 'Archived', 'Requested to be removed from mailing lists in June 2026.', '2026-01-05 10:00:00');
+-- gender/birthdate/city/province are optional demographic fields; Manuel (archived,
+-- opted out) is intentionally left NULL to exercise the "Not specified" grouping.
+INSERT INTO donors (first_name, last_name, email, phone, address, city, province, gender, birthdate, status, notes, created_at) VALUES
+('Maria', 'Santos', 'maria.santos@gmail.com', '+63 917 555 0101', '12 Maginhawa St, Teachers Village, Quezon City', 'Quezon City', 'Metro Manila', 'Female', '1975-03-14', 'Active', 'Prefers email updates. Long-time supporter of education programs.', '2026-01-12 09:30:00'),
+('Jose', 'Ramirez', 'jose.ramirez@yahoo.com', '+63 918 555 0102', 'Unit 8B Salcedo Park Tower, Makati City', 'Makati', 'Metro Manila', 'Male', '1988-07-09', 'Active', NULL, '2026-01-20 14:10:00'),
+('Ana', 'Reyes', 'ana.reyes@outlook.com', '+63 916 555 0103', '45 Osmeña Blvd, Cebu City', 'Cebu City', 'Cebu', 'Female', '1996-11-22', 'Active', NULL, '2026-02-03 10:45:00'),
+('Paolo', 'Dela Cruz', 'paolo.delacruz@gmail.com', '+63 920 555 0104', '23 C. Raymundo Ave, Pasig City', 'Pasig', 'Metro Manila', 'Male', '1983-01-30', 'Active', NULL, '2026-02-14 16:20:00'),
+('Grace', 'Lim', 'grace.lim@limholdings.ph', '+63 917 555 0105', '30th Floor, One Bonifacio High Street, Taguig', 'Taguig', 'Metro Manila', 'Female', '1969-05-18', 'Active', 'Corporate matching donor via Lim Holdings. Interested in water and health projects.', '2026-02-18 11:00:00'),
+('Miguel', 'Tan', 'miguel.tan@gmail.com', '+63 915 555 0106', '88 J.P. Laurel Ave, Davao City', 'Davao City', 'Davao del Sur', 'Male', '1992-09-03', 'Active', NULL, '2026-03-02 08:55:00'),
+('Katrina', 'Villanueva', 'kat.villanueva@gmail.com', '+63 919 555 0107', '17 Shaw Blvd, Mandaluyong City', 'Mandaluyong', 'Metro Manila', 'Female', '2000-02-14', 'Active', NULL, '2026-03-10 13:40:00'),
+('Ramon', 'Aquino', 'ramon.aquino@aquinolaw.ph', '+63 917 555 0108', 'Suite 1201, Ermita Center, Manila', 'Manila', 'Metro Manila', 'Prefer not to say', '1961-12-01', 'Active', 'Prefers phone calls. Asks for quarterly impact reports.', '2026-03-21 15:25:00'),
+('Lourdes', 'Garcia', 'lourdes.garcia@gmail.com', '+63 921 555 0109', '5 General Luna St, Iloilo City', 'Iloilo City', 'Iloilo', 'Female', '1958-08-25', 'Active', NULL, '2026-04-01 09:05:00'),
+('Benjie', 'Ocampo', 'benjie.ocampo@gmail.com', '+63 922 555 0110', '142 A. Mabini St, Caloocan City', 'Caloocan', 'Metro Manila', 'Male', '1990-04-10', 'Active', NULL, '2026-04-08 17:35:00'),
+('Cheska', 'Uy', 'cheska.uy@uygroup.ph', '+63 917 555 0111', '9 Wilson St, San Juan City', 'San Juan', 'Metro Manila', 'Female', '1998-06-27', 'Active', 'Introduced by Grace Lim. Focused on youth and education causes.', '2026-04-15 10:15:00'),
+('Andres', 'Bautista', 'andres.bautista@gmail.com', '+63 918 555 0112', '3 Session Road, Baguio City', 'Baguio', 'Benguet', 'Male', '1978-10-05', 'Active', NULL, '2026-04-27 12:50:00'),
+('Isabel', 'Navarro', 'isabel.navarro@gmail.com', '+63 916 555 0113', '27 Escario St, Cebu City', 'Cebu City', 'Cebu', 'Female', '1985-03-19', 'Active', NULL, '2026-05-06 14:30:00'),
+('Daniel', 'Cruz', 'dan.cruz@gmail.com', '+63 917 555 0114', '11 Doña Soledad Ave, Parañaque City', 'Parañaque', 'Metro Manila', 'Male', '1995-12-12', 'Active', NULL, '2026-05-19 09:45:00'),
+('Sarah', 'Mercado', 'sarah.mercado@gmail.com', '+63 915 555 0115', '64 Alabang-Zapote Rd, Las Piñas City', 'Las Piñas', 'Metro Manila', 'Female', '1972-07-07', 'Active', NULL, '2026-06-02 16:05:00'),
+('Victor', 'Salazar', 'victor.salazar@salazarfoods.ph', '+63 917 555 0116', '2 Marcos Highway, Antipolo City', 'Antipolo', 'Rizal', 'Male', '1966-02-28', 'Inactive', 'Paused giving until Q4 2026 — company budget freeze.', '2026-02-25 11:30:00'),
+('Bea', 'Torres', 'bea.torres@gmail.com', '+63 919 555 0117', '35 Gil Fernando Ave, Marikina City', 'Marikina', 'Metro Manila', 'Female', '2002-05-16', 'Active', NULL, '2026-06-28 13:15:00'),
+('Manuel', 'Robles', 'manuel.robles@gmail.com', '+63 920 555 0118', '50 Rizal Ave, Olongapo City', 'Olongapo', 'Zambales', NULL, NULL, 'Archived', 'Requested to be removed from mailing lists in June 2026.', '2026-01-05 10:00:00');
 
 -- Insert campaigns (amount_raised is recalculated from donations below)
 INSERT INTO campaigns (campaign_name, description, goal_amount, amount_raised, start_date, end_date, status, created_by, created_at) VALUES
@@ -178,46 +189,46 @@ INSERT INTO donations (donor_id, campaign_id, amount, donation_date, payment_met
 (6,  4, 10000, '2026-02-20', 'PayPal',        'Succeeded',  'TXN-2026-0005'),
 (5,  4, 40000, '2026-03-05', 'Bank Transfer', 'Succeeded',  'TXN-2026-0006'),
 (18, 7, 2500,  '2026-03-15', 'Check',         'Succeeded',  'TXN-2026-0007'),
-(7,  4, 6500,  '2026-03-18', 'PayPal',        'Succeeded',  'TXN-2026-0008'),
+(7,  4, 6500,  '2026-03-18', 'GCash',         'Succeeded',  'TXN-2026-0008'),
 (16, 4, 8000,  '2026-03-30', 'Check',         'Succeeded',  'TXN-2026-0009'),
-(9,  4, 5000,  '2026-04-05', 'Card',          'Succeeded',  'TXN-2026-0010'),
+(9,  4, 5000,  '2026-04-05', 'Cash',          'Succeeded',  'TXN-2026-0010'),
 (8,  4, 15000, '2026-04-12', 'Check',         'Succeeded',  'TXN-2026-0011'),
 (2,  6, 7000,  '2026-04-15', 'Bank Transfer', 'Succeeded',  'TXN-2026-0012'),
-(10, 4, 1500,  '2026-04-18', 'Card',          'Succeeded',  'TXN-2026-0013'),
+(10, 4, 1500,  '2026-04-18', 'Cash',          'Succeeded',  'TXN-2026-0013'),
 (1,  6, 5000,  '2026-04-20', 'Card',          'Refunded',   'TXN-2026-0014'),
 (4,  6, 3500,  '2026-04-25', 'Card',          'Succeeded',  'TXN-2026-0015'),
-(11, 6, 12000, '2026-05-02', 'PayPal',        'Succeeded',  'TXN-2026-0016'),
-(12, 6, 2000,  '2026-05-10', 'PayPal',        'Succeeded',  'TXN-2026-0017'),
+(11, 6, 12000, '2026-05-02', 'GCash',         'Succeeded',  'TXN-2026-0016'),
+(12, 6, 2000,  '2026-05-10', 'GCash',         'Succeeded',  'TXN-2026-0017'),
 (5,  2, 75000, '2026-05-20', 'Bank Transfer', 'Succeeded',  'TXN-2026-0018'),
 (6,  2, 18000, '2026-05-25', 'Card',          'Succeeded',  'TXN-2026-0019'),
-(9,  2, 6000,  '2026-05-28', 'PayPal',        'Succeeded',  'TXN-2026-0020'),
-(13, 2, 2500,  '2026-05-30', 'PayPal',        'Succeeded',  'TXN-2026-0021'),
+(9,  2, 6000,  '2026-05-28', 'GCash',         'Succeeded',  'TXN-2026-0020'),
+(13, 2, 2500,  '2026-05-30', 'Cash',          'Succeeded',  'TXN-2026-0021'),
 (7,  2, 9000,  '2026-06-01', 'Card',          'Succeeded',  'TXN-2026-0022'),
 (8,  2, 30000, '2026-06-05', 'Bank Transfer', 'Succeeded',  'TXN-2026-0023'),
 (1,  1, 15000, '2026-06-08', 'Card',          'Succeeded',  'TXN-2026-0024'),
 (5,  1, 50000, '2026-06-10', 'Bank Transfer', 'Succeeded',  'TXN-2026-0025'),
 (3,  2, 5000,  '2026-06-12', 'Card',          'Succeeded',  'TXN-2026-0026'),
 (11, 1, 35000, '2026-06-15', 'Card',          'Succeeded',  'TXN-2026-0027'),
-(10, 2, 2000,  '2026-06-18', 'PayPal',        'Succeeded',  'TXN-2026-0028'),
+(10, 2, 2000,  '2026-06-18', 'GCash',         'Succeeded',  'TXN-2026-0028'),
 (14, 1, 5000,  '2026-06-20', 'Card',          'Succeeded',  'TXN-2026-0029'),
 (6,  1, 20000, '2026-06-22', 'Bank Transfer', 'Succeeded',  'TXN-2026-0030'),
-(15, 1, 2000,  '2026-06-25', 'Card',          'Succeeded',  'TXN-2026-0031'),
+(15, 1, 2000,  '2026-06-25', 'Cash',          'Succeeded',  'TXN-2026-0031'),
 (4,  1, 5000,  '2026-06-30', 'Card',          'Succeeded',  'TXN-2026-0032'),
 (8,  1, 26500, '2026-07-01', 'Card',          'Succeeded',  'TXN-2026-0033'),
 (3,  1, 7000,  '2026-07-02', 'PayPal',        'Succeeded',  'TXN-2026-0034'),
 (1,  2, 10000, '2026-07-03', 'PayPal',        'Succeeded',  'TXN-2026-0035'),
-(17, 3, 1500,  '2026-07-04', 'Card',          'Succeeded',  'TXN-2026-0036'),
+(17, 3, 1500,  '2026-07-04', 'GCash',         'Succeeded',  'TXN-2026-0036'),
 (13, 1, 4000,  '2026-07-05', 'Card',          'Succeeded',  'TXN-2026-0037'),
-(9,  1, 4000,  '2026-07-06', 'Card',          'Succeeded',  'TXN-2026-0038'),
+(9,  1, 4000,  '2026-07-06', 'Cash',          'Succeeded',  'TXN-2026-0038'),
 (5,  3, 20000, '2026-07-08', 'Card',          'Processing', 'TXN-2026-0039'),
 (14, 3, 4000,  '2026-07-09', 'PayPal',        'Succeeded',  'TXN-2026-0040'),
 (2,  1, 10000, '2026-07-10', 'Card',          'Succeeded',  'TXN-2026-0041'),
-(15, 3, 2500,  '2026-07-11', 'PayPal',        'Succeeded',  'TXN-2026-0042'),
+(15, 3, 2500,  '2026-07-11', 'GCash',         'Succeeded',  'TXN-2026-0042'),
 (11, 3, 15000, '2026-07-12', 'Bank Transfer', 'Processing', 'TXN-2026-0043'),
 (7,  3, 6000,  '2026-07-14', 'Card',          'Succeeded',  'TXN-2026-0044'),
 (8,  3, 10000, '2026-07-15', 'Card',          'Failed',     'TXN-2026-0045'),
 (10, 1, 1000,  '2026-07-16', 'Card',          'Failed',     'TXN-2026-0046'),
-(17, 1, 800,   '2026-07-17', 'PayPal',        'Pending',    NULL),
+(17, 1, 800,   '2026-07-17', 'GCash',         'Pending',    NULL),
 (3,  3, 3000,  '2026-07-18', 'Card',          'Pending',    NULL);
 
 -- Spread donation created_at over plausible daytime hours matching donation_date

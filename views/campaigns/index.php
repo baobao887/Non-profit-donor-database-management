@@ -47,6 +47,12 @@ if (!checkSession()) {
       <h3 id="campaignModalTitle" class="text-xl font-semibold mb-5">New campaign</h3>
       <form id="campaignForm">
         <input type="hidden" id="campaignId" />
+        <div id="campaignFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="campaignFormErrorText"></span>
+          </div>
+        </div>
         <div class="form-field"><label for="campaignName">Campaign name</label><input id="campaignName" class="input-glass" required /></div>
         <div class="form-field"><label for="campaignDesc">Description</label><textarea id="campaignDesc" class="input-glass" rows="3" required></textarea></div>
         <div class="grid grid-cols-2 gap-4">

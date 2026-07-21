@@ -57,7 +57,6 @@ include INCLUDES_PATH . 'header.php';
                 <option value="Inactive">Inactive</option>
                 <option value="Archived">Archived</option>
               </select>
-              <button type="button" id="applyFilters" class="btn-secondary w-full rounded-3xl sm:col-span-2">Apply filters</button>
             </div>
           </div>
         </div>
@@ -109,10 +108,39 @@ include INCLUDES_PATH . 'header.php';
       <h3 id="donorModalTitle" class="text-xl font-semibold mb-5">Add donor</h3>
       <form id="donorForm">
         <input type="hidden" id="donorId" />
-        <div class="form-field"><label for="donorName">Full name</label><input id="donorName" class="input-glass" required /></div>
+        <div id="donorFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="donorFormErrorText"></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="donorFirstName">First name</label><input id="donorFirstName" class="input-glass" required /></div>
+          <div class="form-field"><label for="donorLastName">Last name</label><input id="donorLastName" class="input-glass" required /></div>
+        </div>
         <div class="form-field"><label for="donorEmail">Email</label><input id="donorEmail" type="email" class="input-glass" required /></div>
-        <div class="form-field"><label for="donorPhone">Phone</label><input id="donorPhone" class="input-glass" /></div>
+        <div class="form-field"><label for="donorPhone">Phone</label><input id="donorPhone" class="input-glass" />
+          <p class="text-xs text-slate-500 mt-1">At least 7 digits, e.g. 0917 123 4567</p>
+        </div>
         <div class="form-field"><label for="donorRole">Tag / note</label><input id="donorRole" class="input-glass" placeholder="Major Donor" /></div>
+        <!-- Optional demographic fields, collected for aggregate analytics only
+             (data minimization) — never required to record a donation. -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="donorGender">Gender</label>
+            <select id="donorGender" class="input-glass">
+              <option value="">—</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
+          <div class="form-field"><label for="donorBirthdate">Birthdate</label><input id="donorBirthdate" type="date" class="input-glass" /></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-field"><label for="donorCity">City</label><input id="donorCity" class="input-glass" placeholder="Cebu City" /></div>
+          <div class="form-field"><label for="donorProvince">Province</label><input id="donorProvince" class="input-glass" placeholder="Cebu" /></div>
+        </div>
+        <p class="text-xs text-slate-400 mb-2">Optional — used only for aggregate reporting. Donors may leave these blank.</p>
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field" id="donorLevelField" hidden>
             <label>Level</label>

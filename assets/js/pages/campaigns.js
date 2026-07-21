@@ -1,5 +1,5 @@
 import { initStore, getCampaigns, addCampaign, updateCampaign, deleteCampaign, getDonationTrend } from '../store.js';
-import { formatCurrency, formatDate, statusBadgeClass, openModal, closeModal, bindModalClose } from '../utils.js';
+import { formatCurrency, formatDate, statusBadgeClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 import { initCharts } from '../charts.js';
 
@@ -120,6 +120,7 @@ function openAddModal() {
   document.getElementById('campaignModalTitle').textContent = 'New campaign';
   document.getElementById('campaignForm').reset();
   document.getElementById('campaignId').value = '';
+  hideFormError('campaignForm');
   openModal('campaignModal');
 }
 
@@ -127,6 +128,7 @@ function openEditModal(id) {
   const c = allCampaigns.find((x) => String(x.campaign_id) === String(id));
   if (!c) return;
   document.getElementById('campaignModalTitle').textContent = 'Edit campaign';
+  hideFormError('campaignForm');
   document.getElementById('campaignId').value = c.campaign_id;
   document.getElementById('campaignName').value = c.campaign_name;
   document.getElementById('campaignDesc').value = c.description || '';
@@ -151,6 +153,7 @@ async function removeCampaign(id) {
 
 async function saveCampaign(e) {
   e.preventDefault();
+  hideFormError('campaignForm');
 
   const id = document.getElementById('campaignId').value;
   const name = document.getElementById('campaignName').value.trim();
@@ -159,19 +162,19 @@ async function saveCampaign(e) {
   const endDate = document.getElementById('campaignEndDate').value;
 
   if (!name) {
-    alert('Campaign name is required.');
+    showFormError('campaignForm', 'Campaign name is required.');
     return;
   }
   if (!(goal > 0)) {
-    alert('Goal amount must be greater than 0.');
+    showFormError('campaignForm', 'Goal amount must be greater than 0.');
     return;
   }
   if (!startDate || !endDate) {
-    alert('Start date and end date are required.');
+    showFormError('campaignForm', 'Start date and end date are required.');
     return;
   }
   if (endDate < startDate) {
-    alert('End date cannot be before start date.');
+    showFormError('campaignForm', 'End date cannot be before start date.');
     return;
   }
 
@@ -192,7 +195,7 @@ async function saveCampaign(e) {
     renderCards();
     renderInsights();
   } catch (err) {
-    alert(err.message || 'Could not save campaign.');
+    showFormError('campaignForm', err.message || 'Could not save campaign.');
   }
 }
 

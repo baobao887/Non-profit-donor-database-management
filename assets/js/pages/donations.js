@@ -1,11 +1,20 @@
-import { initStore, getDonations, getDonors, addDonation, updateDonation, getCampaigns, getPaymentMethodBreakdown, getWeekdayRevenue } from '../store.js';
-import { formatCurrency, formatDate, statusBadgeClass, openModal, closeModal, bindModalClose, exportCsv } from '../utils.js';
+import { initStore, getDonations, getDonationStats, getDonorOptions, addDonation, updateDonation, getCampaigns, getPaymentMethodBreakdown, getWeekdayRevenue } from '../store.js';
+import { formatCurrency, formatDate, statusBadgeClass, openModal, closeModal, bindModalClose, exportCsv, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 import { initCharts } from '../charts.js';
 
-let allDonors = [];
+const PAGE_SIZE = 25;
+let donorOptions = [];
 let allCampaigns = [];
-let allDonations = [];
+let currentDonations = [];
+let page = 1;
+let totalDonations = 0;
+let loading = false;
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
 
 async function init() {
   await initStore();
@@ -13,40 +22,45 @@ async function init() {
   initCharts();
   bindModalClose();
 
-  [allDonors, allCampaigns, allDonations] = await Promise.all([getDonors(), getCampaigns(), getDonations()]);
+  // Donor dropdown loads from the lightweight id+name endpoint; campaigns stay
+  // client-side (an org has few of them). The donations list itself is fetched
+  // one page at a time with server-side search/filter/pagination.
+  [donorOptions, allCampaigns] = await Promise.all([getDonorOptions(), getCampaigns()]);
 
   populateDonorSelect();
   populateCampaignSelect();
-  updateStats();
-  renderTable();
+  await Promise.all([loadPage(1), updateStats()]);
   renderCharts();
 
   document.getElementById('openAddDonation')?.addEventListener('click', () => {
     document.getElementById('donationForm').reset();
     document.getElementById('donationDate').value = new Date().toISOString().slice(0, 10);
+    hideFormError('donationForm');
     openModal('donationModal');
   });
   document.getElementById('donationForm')?.addEventListener('submit', saveDonation);
   document.getElementById('donationEditForm')?.addEventListener('submit', saveDonationEdit);
   document.getElementById('exportDonations')?.addEventListener('click', exportDonations);
-  document.getElementById('filterStatus')?.addEventListener('change', renderTable);
-  document.getElementById('donationSearch')?.addEventListener('input', renderTable);
+  document.getElementById('filterStatus')?.addEventListener('change', () => loadPage(1));
+  document.getElementById('donationSearch')?.addEventListener('input', debounce(() => loadPage(1), 300));
+  document.getElementById('donationPrevPage')?.addEventListener('click', () => loadPage(page - 1));
+  document.getElementById('donationNextPage')?.addEventListener('click', () => loadPage(page + 1));
 }
 
-function donorName(id) {
-  const d = allDonors.find((x) => String(x.donor_id) === String(id));
-  return d ? `${d.first_name} ${d.last_name}` : 'Unknown';
+// The paginated list rows carry donor + campaign names from the API join, so
+// these read straight off the row rather than looking up a bulk client array.
+function donorName(d) {
+  return d.first_name ? `${d.first_name} ${d.last_name}` : 'Unknown';
 }
 
-function campaignName(id) {
-  const c = allCampaigns.find((x) => String(x.campaign_id) === String(id));
-  return c ? c.campaign_name : 'Unknown';
+function campaignName(d) {
+  return d.campaign_name || 'Unknown';
 }
 
 function populateDonorSelect() {
   const sel = document.getElementById('donationDonor');
   if (!sel) return;
-  sel.innerHTML = allDonors.map((d) => `<option value="${d.donor_id}">${escapeHtml(`${d.first_name} ${d.last_name}`)}</option>`).join('');
+  sel.innerHTML = donorOptions.map((d) => `<option value="${d.donor_id}">${escapeHtml(`${d.first_name} ${d.last_name}`)}</option>`).join('');
 }
 
 function populateCampaignSelect() {
@@ -55,37 +69,60 @@ function populateCampaignSelect() {
   sel.innerHTML = allCampaigns.map((c) => `<option value="${c.campaign_id}">${escapeHtml(c.campaign_name)}</option>`).join('');
 }
 
-function updateStats() {
-  const succeeded = allDonations.filter((d) => d.payment_status === 'Succeeded');
-  const total = succeeded.reduce((s, d) => s + Number(d.amount), 0);
-  const avg = succeeded.length ? Math.round(total / succeeded.length) : 0;
-  const refunds = allDonations.filter((d) => d.payment_status === 'Refunded').length;
-  const refundRate = allDonations.length ? ((refunds / allDonations.length) * 100).toFixed(1) : '0';
-
-  document.getElementById('stat-revenue')?.replaceChildren(document.createTextNode(formatCurrency(total)));
-  document.getElementById('stat-avg')?.replaceChildren(document.createTextNode(formatCurrency(avg)));
+async function updateStats() {
+  const { revenue, average, refundRate } = await getDonationStats();
+  document.getElementById('stat-revenue')?.replaceChildren(document.createTextNode(formatCurrency(revenue)));
+  document.getElementById('stat-avg')?.replaceChildren(document.createTextNode(formatCurrency(average)));
   document.getElementById('stat-refund')?.replaceChildren(document.createTextNode(refundRate + '%'));
+}
+
+function getFilters() {
+  return {
+    search: document.getElementById('donationSearch')?.value.trim() || '',
+    status: document.getElementById('filterStatus')?.value || '',
+  };
+}
+
+async function loadPage(p) {
+  if (loading) return;
+  loading = true;
+  page = Math.max(1, p);
+  showLoading();
+
+  const { search, status } = getFilters();
+  let result = await getDonations({ page, limit: PAGE_SIZE, search, status });
+
+  const totalPages = Math.max(1, Math.ceil((result.total || 0) / PAGE_SIZE));
+  if (page > totalPages) {
+    page = totalPages;
+    result = await getDonations({ page, limit: PAGE_SIZE, search, status });
+  }
+
+  currentDonations = result.donations;
+  totalDonations = result.total;
+  page = result.page;
+  loading = false;
+  renderTable();
+}
+
+function showLoading() {
+  const tbody = document.getElementById('donations-table-body');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-10 text-center text-slate-400">Loading donations…</td></tr>';
+  document.getElementById('donationShowingInfo')?.replaceChildren(document.createTextNode('Loading…'));
 }
 
 function renderTable() {
   const tbody = document.getElementById('donations-table-body');
   if (!tbody) return;
 
+  const q = document.getElementById('donationSearch')?.value.trim() || '';
   const statusFilter = document.getElementById('filterStatus')?.value || 'all';
-  const q = document.getElementById('donationSearch')?.value.trim().toLowerCase() || '';
-  const donations = allDonations.filter((d) => {
-    const matchStatus = statusFilter === 'all' || d.payment_status === statusFilter;
-    const matchQ = !q || donorName(d.donor_id).toLowerCase().includes(q) || campaignName(d.campaign_id).toLowerCase().includes(q);
-    return matchStatus && matchQ;
-  });
 
-  tbody.innerHTML = donations.length ? donations.map((d) => {
-    const methodIcon = d.payment_method === 'Card' ? 'fa-solid fa-credit-card text-sky-600'
-      : d.payment_method === 'PayPal' ? 'fa-brands fa-cc-paypal text-slate-700'
-      : 'fa-solid fa-building-columns text-indigo-600';
+  tbody.innerHTML = currentDonations.length ? currentDonations.map((d) => {
+    const methodIcon = METHOD_ICONS[d.payment_method] || 'fa-solid fa-building-columns text-indigo-600';
     return `<tr class="table-row">
-      <td class="px-6 py-4"><p class="font-semibold">#${d.donation_id}</p><p class="text-slate-400 text-sm">${escapeHtml(campaignName(d.campaign_id))}</p></td>
-      <td class="py-4">${escapeHtml(donorName(d.donor_id))}</td>
+      <td class="px-6 py-4"><p class="font-semibold">#${d.donation_id}</p><p class="text-slate-400 text-sm">${escapeHtml(campaignName(d))}</p></td>
+      <td class="py-4">${escapeHtml(donorName(d))}</td>
       <td class="py-4">${formatDate(d.donation_date)}</td>
       <td class="py-4 font-semibold">${formatCurrency(d.amount)}</td>
       <td class="py-4"><span class="inline-flex items-center gap-2 text-slate-600"><i class="${methodIcon}"></i> ${d.payment_method}</span></td>
@@ -94,10 +131,17 @@ function renderTable() {
     </tr>`;
   }).join('') : `<tr><td colspan="7" class="empty-state px-6 py-10 text-center text-slate-500">${q || statusFilter !== 'all' ? 'No donations match your search.' : 'No donations found.'}</td></tr>`;
 
+  const totalPages = Math.max(1, Math.ceil(totalDonations / PAGE_SIZE));
+  const start = (page - 1) * PAGE_SIZE;
+  document.getElementById('donationShowingInfo')?.replaceChildren(document.createTextNode(
+    `Showing ${totalDonations ? start + 1 : 0}–${Math.min(start + PAGE_SIZE, totalDonations)} of ${totalDonations} · Page ${page} of ${totalPages}`));
+  document.getElementById('donationPrevPage')?.toggleAttribute('disabled', page <= 1);
+  document.getElementById('donationNextPage')?.toggleAttribute('disabled', page >= totalPages);
+
   tbody.querySelectorAll('[data-receipt]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const d = allDonations.find((x) => String(x.donation_id) === btn.dataset.receipt);
-      if (d) alert(`Receipt #${d.donation_id}\nAmount: ${formatCurrency(d.amount)}\nDate: ${formatDate(d.donation_date)}\nCampaign: ${campaignName(d.campaign_id)}`);
+      const d = currentDonations.find((x) => String(x.donation_id) === btn.dataset.receipt);
+      if (d) alert(`Receipt #${d.donation_id}\nAmount: ${formatCurrency(d.amount)}\nDate: ${formatDate(d.donation_date)}\nCampaign: ${campaignName(d)}`);
     });
   });
   tbody.querySelectorAll('[data-edit-donation]').forEach((btn) => {
@@ -106,11 +150,12 @@ function renderTable() {
 }
 
 function openEditModal(id) {
-  const d = allDonations.find((x) => String(x.donation_id) === String(id));
+  const d = currentDonations.find((x) => String(x.donation_id) === String(id));
   if (!d) return;
+  hideFormError('donationEditForm');
   document.getElementById('editDonationId').value = d.donation_id;
   document.getElementById('editDonationContext').textContent =
-    `#${d.donation_id} · ${donorName(d.donor_id)} → ${campaignName(d.campaign_id)} · ${formatDate(d.donation_date)}`;
+    `#${d.donation_id} · ${donorName(d)} → ${campaignName(d)} · ${formatDate(d.donation_date)}`;
   document.getElementById('editDonationAmount').value = d.amount;
   document.getElementById('editDonationMethod').value = d.payment_method;
   document.getElementById('editDonationStatus').value = d.payment_status;
@@ -122,10 +167,11 @@ function openEditModal(id) {
 // Pending gift marked Succeeded is immediately reflected everywhere.
 async function saveDonationEdit(e) {
   e.preventDefault();
+  hideFormError('donationEditForm');
   const id = document.getElementById('editDonationId').value;
   const amount = Number(document.getElementById('editDonationAmount').value);
   if (!(amount > 0)) {
-    alert('Amount must be greater than 0.');
+    showFormError('donationEditForm', 'Amount must be greater than 0.');
     return;
   }
   try {
@@ -135,14 +181,21 @@ async function saveDonationEdit(e) {
       payment_status: document.getElementById('editDonationStatus').value,
     });
     closeModal('donationEditModal');
-    allDonations = await getDonations();
-    updateStats();
-    renderTable();
+    await Promise.all([loadPage(page), updateStats()]);
     renderCharts();
   } catch (err) {
-    alert(err.message || 'Could not update donation.');
+    showFormError('donationEditForm', err.message || 'Could not update donation.');
   }
 }
+
+// Bank Transfer and Check intentionally fall through to the bank-building
+// default icon, matching the pre-Cash/GCash rendering.
+const METHOD_ICONS = {
+  Cash: 'fa-solid fa-money-bill-wave text-emerald-600',
+  GCash: 'fa-solid fa-mobile-screen-button text-blue-600',
+  Card: 'fa-solid fa-credit-card text-sky-600',
+  PayPal: 'fa-brands fa-cc-paypal text-slate-700',
+};
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -172,6 +225,7 @@ async function renderCharts() {
 
 async function saveDonation(e) {
   e.preventDefault();
+  hideFormError('donationForm');
   try {
     await addDonation({
       donor_id: document.getElementById('donationDonor').value,
@@ -182,20 +236,21 @@ async function saveDonation(e) {
       payment_status: document.getElementById('donationStatus').value,
     });
     closeModal('donationModal');
-    allDonations = await getDonations();
-    updateStats();
-    renderTable();
+    await Promise.all([loadPage(1), updateStats()]);
     renderCharts();
   } catch (err) {
-    alert(err.message || 'Could not save donation.');
+    showFormError('donationForm', err.message || 'Could not save donation.');
   }
 }
 
+// Exports the current page of the filtered feed. The list is now server-side
+// paginated, so this reflects exactly what's on screen; the button is labeled
+// accordingly in the view.
 function exportDonations() {
-  exportCsv('donations.csv', allDonations, [
+  exportCsv('donations.csv', currentDonations, [
     { label: 'ID', value: (d) => d.donation_id },
-    { label: 'Donor', value: (d) => donorName(d.donor_id) },
-    { label: 'Campaign', value: (d) => campaignName(d.campaign_id) },
+    { label: 'Donor', value: (d) => donorName(d) },
+    { label: 'Campaign', value: (d) => campaignName(d) },
     { label: 'Amount (PHP)', value: (d) => formatCurrency(d.amount) },
     { label: 'Date', value: (d) => d.donation_date },
     { label: 'Status', value: (d) => d.payment_status },

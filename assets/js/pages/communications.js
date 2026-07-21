@@ -1,5 +1,5 @@
-import { initStore, getCommunications, getDonors, addCommunication, updateCommunication, deleteCommunication } from '../store.js';
-import { formatDate, formatRelativeTime, initials, avatarClass, statusBadgeClass, openModal, closeModal, bindModalClose } from '../utils.js';
+import { initStore, getCommunications, getDonorOptions, addCommunication, updateCommunication, deleteCommunication } from '../store.js';
+import { formatDate, formatRelativeTime, initials, avatarClass, statusBadgeClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 
 let currentPage = 1;
@@ -12,7 +12,7 @@ async function init() {
   initLayout({ showSearch: false });
   bindModalClose();
 
-  const donors = await getDonors();
+  const donors = await getDonorOptions();
   populateDonorSelect(donors);
   await renderTimeline(1);
 
@@ -92,6 +92,7 @@ function openAddModal() {
   document.getElementById('commForm').reset();
   document.getElementById('commId').value = '';
   document.getElementById('commDonor').disabled = false;
+  hideFormError('commForm');
   openModal('commModal');
 }
 
@@ -99,6 +100,7 @@ function openEditModal(id) {
   const c = currentItems.find((x) => String(x.communication_id) === String(id));
   if (!c) return;
   document.getElementById('commModalTitle').textContent = 'Edit communication';
+  hideFormError('commForm');
   document.getElementById('commId').value = c.communication_id;
   document.getElementById('commType').value = c.type;
   document.getElementById('commDonor').value = c.donor_id;
@@ -121,6 +123,7 @@ async function removeNote(id) {
 
 async function saveNote(e) {
   e.preventDefault();
+  hideFormError('commForm');
   const id = document.getElementById('commId').value;
   const content = document.getElementById('commContent').value.trim();
 
@@ -142,7 +145,7 @@ async function saveNote(e) {
     closeModal('commModal');
     await renderTimeline(id ? currentPage : 1);
   } catch (err) {
-    alert(err.message || 'Could not save communication.');
+    showFormError('commForm', err.message || 'Could not save communication.');
   }
 }
 

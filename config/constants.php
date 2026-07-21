@@ -30,6 +30,14 @@ define('DONOR_STATUSES', [
     'Archived'
 ]);
 
+// Donor demographics — OPTIONAL fields collected for aggregate analytics only,
+// consistent with data minimization. Never required to process a donation.
+define('DONOR_GENDERS', [
+    'Male',
+    'Female',
+    'Prefer not to say'
+]);
+
 // Campaign Status
 define('CAMPAIGN_STATUS_PLANNING', 'Planning');
 define('CAMPAIGN_STATUS_LIVE', 'Live');
@@ -62,6 +70,8 @@ define('DONATION_STATUSES', [
 
 // Payment Methods
 define('PAYMENT_METHODS', [
+    'Cash',
+    'GCash',
     'Card',
     'Bank Transfer',
     'PayPal',

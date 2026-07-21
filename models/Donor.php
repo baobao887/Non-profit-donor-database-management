@@ -105,12 +105,16 @@ class Donor {
 
     /**
      * Create donor
+     *
+     * gender/birthdate/city/province are optional demographic fields (any may
+     * be null); they are collected for aggregate analytics only and are never
+     * required to record a donation.
      */
-    public function create($firstName, $lastName, $email, $phone, $address, $notes = '') {
+    public function create($firstName, $lastName, $email, $phone, $address, $notes = '', $gender = null, $birthdate = null, $city = null, $province = null) {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO donors (first_name, last_name, email, phone, address, notes, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                INSERT INTO donors (first_name, last_name, email, phone, address, gender, birthdate, city, province, notes, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             $stmt->execute([
                 $firstName,
@@ -118,6 +122,10 @@ class Donor {
                 $email,
                 $phone,
                 $address,
+                $gender ?: null,
+                $birthdate ?: null,
+                $city,
+                $province,
                 $notes,
                 DONOR_STATUS_ACTIVE
             ]);
@@ -129,14 +137,17 @@ class Donor {
 
     /**
      * Update donor
+     *
+     * Demographic fields (gender/birthdate/city/province) are optional and
+     * nullable — see create().
      */
-    public function update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes = null) {
+    public function update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes = null, $gender = null, $birthdate = null, $city = null, $province = null) {
         $stmt = $this->pdo->prepare("
             UPDATE donors
-            SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, status = ?, notes = ?, updated_at = NOW()
+            SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, gender = ?, birthdate = ?, city = ?, province = ?, status = ?, notes = ?, updated_at = NOW()
             WHERE donor_id = ?
         ");
-        return $stmt->execute([$firstName, $lastName, $email, $phone, $address, $status, $notes, $donorId]);
+        return $stmt->execute([$firstName, $lastName, $email, $phone, $address, $gender ?: null, $birthdate ?: null, $city, $province, $status, $notes, $donorId]);
     }
     
     /**
@@ -197,6 +208,109 @@ class Donor {
         ");
         $stmt->execute([$search, $search, $search, DONOR_STATUS_ARCHIVED, $limit]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Build the shared WHERE clause + bound params for the list/count/export
+     * queries below. Handles free-text search plus optional status and rank
+     * filters together, all parameterized (including the LIKE terms).
+     */
+    private function buildFilters($search, $status, $rank) {
+        $clauses = [];
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $like = '%' . $search . '%';
+            $clauses[] = "(first_name LIKE ? OR last_name LIKE ? OR CONCAT(first_name, ' ', last_name) LIKE ? OR email LIKE ? OR phone LIKE ? OR notes LIKE ?)";
+            array_push($params, $like, $like, $like, $like, $like, $like);
+        }
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            $clauses[] = "status = ?";
+            $params[] = $status;
+        }
+        if ($rank !== null && $rank !== '' && $rank !== 'all') {
+            $clauses[] = "donor_rank = ?";
+            $params[] = $rank;
+        }
+
+        $where = $clauses ? (' WHERE ' . implode(' AND ', $clauses)) : '';
+        return [$where, $params];
+    }
+
+    /**
+     * One query handling search + status + rank filters together with
+     * LIMIT/OFFSET, for true server-side pagination.
+     */
+    public function getFiltered($page, $limit, $search = '', $status = null, $rank = null) {
+        $offset = ($page - 1) * $limit;
+        [$where, $params] = $this->buildFilters($search, $status, $rank);
+        $sql = "SELECT * FROM donors" . $where . " ORDER BY total_donated DESC, updated_at DESC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Total rows matching the same filters, for "Page X of Y" display.
+     */
+    public function countFiltered($search = '', $status = null, $rank = null) {
+        [$where, $params] = $this->buildFilters($search, $status, $rank);
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) AS count FROM donors" . $where);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+        return (int)$row['count'];
+    }
+
+    /**
+     * Full filtered set (no LIMIT) for CSV export, so the export reflects the
+     * entire filtered result rather than only the current page.
+     */
+    public function getForExport($search = '', $status = null, $rank = null) {
+        [$where, $params] = $this->buildFilters($search, $status, $rank);
+        $sql = "SELECT * FROM donors" . $where . " ORDER BY total_donated DESC, updated_at DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Lightweight id + name list for populating donor dropdowns (donation and
+     * communication forms) without bulk-loading full paginated donor rows.
+     * Excludes archived donors. This returns every non-archived donor; at very
+     * large scale a search-backed typeahead would replace it, but for this
+     * app's donor volume a lightweight id+name list is sufficient.
+     */
+    public function getOptions() {
+        $stmt = $this->pdo->prepare("
+            SELECT donor_id, first_name, last_name
+            FROM donors
+            WHERE status != ?
+            ORDER BY first_name, last_name
+        ");
+        $stmt->execute([DONOR_STATUS_ARCHIVED]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Sidebar summary (Silver/Gold counts, lifetime total) computed
+     * server-side so it stays correct once the list itself is paginated.
+     */
+    public function getSummary() {
+        $stmt = $this->pdo->query("
+            SELECT
+                SUM(donor_rank = 'Silver') AS silver,
+                SUM(donor_rank = 'Gold') AS gold,
+                COALESCE(SUM(total_donated), 0) AS lifetime
+            FROM donors
+        ");
+        $row = $stmt->fetch();
+        return [
+            'silver' => (int)($row['silver'] ?? 0),
+            'gold' => (int)($row['gold'] ?? 0),
+            'lifetime' => (float)($row['lifetime'] ?? 0),
+        ];
     }
 }
 ?>

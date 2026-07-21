@@ -19,15 +19,6 @@ if (!checkSession()) {
 // All state-changing requests must carry a valid CSRF token (GET passes through)
 requireApiCsrf();
 
-/**
- * Split a single "full name" input into first/last name for storage,
- * since the staff form only collects one Name field.
- */
-function splitName($fullName) {
-    $parts = preg_split('/\s+/', trim($fullName), 2);
-    return [$parts[0] ?? '', $parts[1] ?? $parts[0] ?? ''];
-}
-
 try {
     $pdo = getDB();
     $userModel = new User($pdo);
@@ -65,12 +56,13 @@ try {
             requireApiRole(ROLE_ADMIN);
             $data = json_decode(file_get_contents('php://input'), true);
 
-            [$firstName, $lastName] = splitName($data['name'] ?? '');
+            $firstName = trim($data['first_name'] ?? '');
+            $lastName = trim($data['last_name'] ?? '');
             $email = trim($data['email'] ?? '');
             $role = trim($data['role'] ?? '');
 
-            if (empty($firstName)) {
-                throw new Exception('Name is required');
+            if (empty($firstName) || empty($lastName)) {
+                throw new Exception('First and last name are required');
             }
 
             if (empty($email) || !validateEmail($email)) {
@@ -119,12 +111,15 @@ try {
                 throw new Exception('Staff member not found');
             }
 
-            [$firstName, $lastName] = isset($data['name'])
-                ? splitName($data['name'])
-                : [$user['first_name'], $user['last_name']];
+            $firstName = trim($data['first_name'] ?? $user['first_name']);
+            $lastName = trim($data['last_name'] ?? $user['last_name']);
             $email = trim($data['email'] ?? $user['email']);
             $role = trim($data['role'] ?? $user['role']);
             $status = $data['status'] ?? $user['status'];
+
+            if (empty($firstName) || empty($lastName)) {
+                throw new Exception('First and last name are required');
+            }
 
             if (empty($email) || !validateEmail($email)) {
                 throw new Exception('A valid email is required');

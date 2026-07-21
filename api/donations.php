@@ -33,12 +33,15 @@ try {
     // GET requests
     if ($method === 'GET') {
         if ($action === 'list') {
-            $page = (int)($_GET['page'] ?? 1);
-            // Optional capped page size so list pages and form dropdowns can
-            // load the full dataset instead of silently seeing only page 1.
-            $limit = min(1000, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
-            $donations = $donationModel->getAll($page, $limit);
-            $total = $donationModel->getTotalCount();
+            // True server-side pagination: search + status filters applied in
+            // SQL, one page of rows returned (with donor + campaign names).
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = min(100, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $search = trim($_GET['search'] ?? '');
+            $status = $_GET['status'] ?? null;
+
+            $donations = $donationModel->getFiltered($page, $limit, $search, $status);
+            $total = $donationModel->countFiltered($search, $status);
 
             echo json_encode([
                 'donations' => $donations,
@@ -46,6 +49,9 @@ try {
                 'page' => $page,
                 'limit' => $limit
             ]);
+        }
+        elseif ($action === 'stats') {
+            echo json_encode($donationModel->getStats());
         }
         elseif ($action === 'get' && isset($_GET['id'])) {
             $donation = $donationModel->getById((int)$_GET['id']);
@@ -100,7 +106,7 @@ try {
             $campaignId = (int)($data['campaign_id'] ?? 0);
             $amount = (float)($data['amount'] ?? 0);
             $donationDate = $data['donation_date'] ?? date(DATE_FORMAT);
-            $paymentMethod = $data['payment_method'] ?? 'Card';
+            $paymentMethod = $data['payment_method'] ?? 'Cash';
             $paymentStatus = $data['payment_status'] ?? DONATION_STATUS_SUCCEEDED;
 
             if (!$donorId || !$campaignId) {

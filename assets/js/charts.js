@@ -48,7 +48,9 @@ export function initCharts() {
       type: 'doughnut',
       data: {
         labels: [],
-        datasets: [{ data: [], backgroundColor: ['#2563EB', '#8B5CF6', '#10B981', '#F59E0B'], borderWidth: 0 }],
+        // Six colors for the six payment methods (Cash, GCash, Card,
+        // Bank Transfer, PayPal, Check) so no slice falls back to gray.
+        datasets: [{ data: [], backgroundColor: ['#2563EB', '#8B5CF6', '#10B981', '#F59E0B', '#14B8A6', '#EC4899'], borderWidth: 0 }],
       },
       options: chartDoughnutOptions(),
     },
@@ -65,6 +67,15 @@ export function initCharts() {
       data: {
         labels: [],
         datasets: [{ data: [], backgroundColor: ['#2563EB', '#10B981', '#8B5CF6', '#F59E0B'], borderWidth: 0 }],
+      },
+      options: chartDoughnutOptions(),
+    },
+    // Giving-by-gender: Male / Female / Prefer not to say / Not specified.
+    genderChart: {
+      type: 'doughnut',
+      data: {
+        labels: [],
+        datasets: [{ data: [], backgroundColor: ['#2563EB', '#EC4899', '#8B5CF6', '#94A3B8'], borderWidth: 0 }],
       },
       options: chartDoughnutOptions(),
     },

@@ -1,5 +1,5 @@
 import { initStore, getStaff, addStaff, updateStaff, deleteStaff } from '../store.js';
-import { initials, avatarClass, openModal, closeModal, bindModalClose } from '../utils.js';
+import { initials, avatarClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 
 let allStaff = [];
@@ -69,19 +69,27 @@ function edit(id) {
   const byId = (x) => document.getElementById(x);
   byId('staffTitle').textContent = id ? 'Edit staff member' : 'Add staff member';
   byId('staffId').value = s.user_id || '';
-  byId('staffName').value = s.user_id ? `${s.first_name} ${s.last_name}` : '';
+  byId('staffFirstName').value = s.first_name || '';
+  byId('staffLastName').value = s.last_name || '';
   byId('staffEmail').value = s.email || '';
-  byId('staffRole').value = s.role || '';
+  // Existing staff keep their stored role; new members default to Staff (the
+  // dropdown's first option) so the select never renders blank.
+  byId('staffRole').value = s.role || 'Staff';
+  hideFormError('staffForm');
   openModal('staffModal');
 }
 
 async function save(e) {
   e.preventDefault();
+  hideFormError('staffForm');
   const byId = (x) => document.getElementById(x);
   const data = {
-    name: byId('staffName').value.trim(),
+    first_name: byId('staffFirstName').value.trim(),
+    last_name: byId('staffLastName').value.trim(),
     email: byId('staffEmail').value.trim(),
-    role: byId('staffRole').value.trim(),
+    // A <select> can only yield one of its predefined option values, so
+    // there's no stray whitespace to trim.
+    role: byId('staffRole').value,
   };
   try {
     let tempPassword = null;
@@ -96,7 +104,7 @@ async function save(e) {
     render();
     if (tempPassword) showTempPassword(data.email, tempPassword);
   } catch (err) {
-    alert(err.message || 'Could not save staff member.');
+    showFormError('staffForm', err.message || 'Could not save staff member.');
   }
 }
 

@@ -42,6 +42,10 @@ try {
         'paymentBreakdown' => $donationModel->getPaymentMethodBreakdown(),
         'weekdayActivity' => $donationModel->getWeekdayRevenue(),
         'donorRankBreakdown' => $donorModel->getRankBreakdown(),
+        // Demographic analytics — who gives more, by gender / location / age.
+        'genderBreakdown' => $donationModel->getGenderBreakdown(),
+        'cityBreakdown' => $donationModel->getCityBreakdown(10),
+        'ageBreakdown' => $donationModel->getAgeBracketBreakdown(),
     ]);
 
 } catch (Exception $e) {

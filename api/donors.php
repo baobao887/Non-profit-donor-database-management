@@ -19,6 +19,37 @@ if (!checkSession()) {
 // All state-changing requests must carry a valid CSRF token (GET passes through)
 requireApiCsrf();
 
+/**
+ * Validate the optional demographic fields shared by create and update.
+ * Each is nullable — an empty value is normalized to null and passes.
+ * Returns [gender, birthdate, city, province] ready for the model.
+ */
+function normalizeDemographics(array $data) {
+    $gender = trim($data['gender'] ?? '');
+    $birthdate = trim($data['birthdate'] ?? '');
+    $city = trim($data['city'] ?? '');
+    $province = trim($data['province'] ?? '');
+
+    if ($gender !== '' && !in_array($gender, DONOR_GENDERS, true)) {
+        throw new Exception('Invalid gender value');
+    }
+    if ($birthdate !== '') {
+        if (!validateDate($birthdate)) {
+            throw new Exception('Invalid birthdate (expected YYYY-MM-DD)');
+        }
+        if ($birthdate >= date('Y-m-d')) {
+            throw new Exception('Birthdate must be a date in the past');
+        }
+    }
+
+    return [
+        $gender !== '' ? $gender : null,
+        $birthdate !== '' ? $birthdate : null,
+        $city !== '' ? $city : null,
+        $province !== '' ? $province : null,
+    ];
+}
+
 try {
     $pdo = getDB();
     $donorModel = new Donor($pdo);
@@ -29,13 +60,16 @@ try {
     // GET requests
     if ($method === 'GET') {
         if ($action === 'list') {
-            $page = (int)($_GET['page'] ?? 1);
+            // True server-side pagination: search + status + rank filters are
+            // applied in SQL, and only one page of rows is returned.
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = min(100, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $search = trim($_GET['search'] ?? '');
             $status = $_GET['status'] ?? null;
-            // Optional capped page size so list pages and form dropdowns can
-            // load the full dataset instead of silently seeing only page 1.
-            $limit = min(1000, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
-            $donors = $donorModel->getAll($page, $limit, $status);
-            $total = $donorModel->getTotalCount($status);
+            $rank = $_GET['rank'] ?? null;
+
+            $donors = $donorModel->getFiltered($page, $limit, $search, $status, $rank);
+            $total = $donorModel->countFiltered($search, $status, $rank);
 
             echo json_encode([
                 'donors' => $donors,
@@ -43,6 +77,21 @@ try {
                 'page' => $page,
                 'limit' => $limit
             ]);
+        }
+        elseif ($action === 'options') {
+            // Lightweight id+name list for the donation/communication form
+            // dropdowns — avoids bulk-loading full paginated donor rows.
+            echo json_encode(['donors' => $donorModel->getOptions()]);
+        }
+        elseif ($action === 'summary') {
+            echo json_encode($donorModel->getSummary());
+        }
+        elseif ($action === 'export') {
+            // Full filtered set (all matching rows) for CSV export.
+            $search = trim($_GET['search'] ?? '');
+            $status = $_GET['status'] ?? null;
+            $rank = $_GET['rank'] ?? null;
+            echo json_encode(['donors' => $donorModel->getForExport($search, $status, $rank)]);
         }
         elseif ($action === 'get' && isset($_GET['id'])) {
             $donor = $donorModel->getById((int)$_GET['id']);
@@ -97,8 +146,10 @@ try {
                 throw new Exception('Invalid phone format');
             }
 
-            $donorId = $donorModel->create($firstName, $lastName, $email, $phone, $address, $notes);
-            
+            [$gender, $birthdate, $city, $province] = normalizeDemographics($data);
+
+            $donorId = $donorModel->create($firstName, $lastName, $email, $phone, $address, $notes, $gender, $birthdate, $city, $province);
+
             logActivity(getCurrentUserId(), 'create', "Created donor: $firstName $lastName", 'donor', $donorId);
             
             echo json_encode([
@@ -148,8 +199,17 @@ try {
                 throw new Exception('Invalid donor status');
             }
 
-            $donorModel->update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes);
-            
+            // Demographics are optional; fall back to the stored value when a
+            // key is absent so a partial update never wipes an existing value.
+            [$gender, $birthdate, $city, $province] = normalizeDemographics([
+                'gender'    => array_key_exists('gender', $data) ? $data['gender'] : $donor['gender'],
+                'birthdate' => array_key_exists('birthdate', $data) ? $data['birthdate'] : $donor['birthdate'],
+                'city'      => array_key_exists('city', $data) ? $data['city'] : $donor['city'],
+                'province'  => array_key_exists('province', $data) ? $data['province'] : $donor['province'],
+            ]);
+
+            $donorModel->update($donorId, $firstName, $lastName, $email, $phone, $address, $status, $notes, $gender, $birthdate, $city, $province);
+
             logActivity(getCurrentUserId(), 'update', "Updated donor: $firstName $lastName", 'donor', $donorId);
             
             echo json_encode([
