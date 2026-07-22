@@ -1,5 +1,5 @@
 import { initStore, getStaff, addStaff, updateStaff, deleteStaff } from '../store.js';
-import { initials, avatarClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
+import { initials, avatarClass, statusBadgeClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 
 let allStaff = [];
@@ -40,7 +40,10 @@ function render() {
     return `<article class="card-glass p-6 shadow-xl rounded-[28px]">
       <div class="flex items-center justify-between">
         <div class="avatar ${avatarClass(i)}">${initials(name)}</div>
-        <span class="badge bg-sky-100 text-sky-700">${s.role}</span>
+        <div class="flex items-center gap-2">
+          <span class="badge ${statusBadgeClass(s.status)}">${s.status}</span>
+          <span class="badge bg-sky-100 text-sky-700">${s.role}</span>
+        </div>
       </div>
       <h2 class="text-xl font-semibold mt-5">${escapeHtml(name)}</h2>
       <p class="text-slate-500 mt-1">${escapeHtml(s.email)}</p>
@@ -75,6 +78,11 @@ function edit(id) {
   // Existing staff keep their stored role; new members default to Staff (the
   // dropdown's first option) so the select never renders blank.
   byId('staffRole').value = s.role || 'Staff';
+  // Status is edit-only: User::create() always inserts Active, so there is no
+  // real choice to offer on the add form.
+  byId('staffStatus').value = s.status || 'Active';
+  byId('staffStatusField').hidden = !id;
+  byId('staffStatusHint').hidden = !!id;
   hideFormError('staffForm');
   openModal('staffModal');
 }
@@ -94,6 +102,7 @@ async function save(e) {
   try {
     let tempPassword = null;
     if (byId('staffId').value) {
+      data.status = byId('staffStatus').value;
       await updateStaff(byId('staffId').value, data);
     } else {
       const created = await addStaff(data);

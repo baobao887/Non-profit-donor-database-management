@@ -119,17 +119,48 @@ class User {
     }
     
     /**
-     * Get active staff users
+     * Get staff users for the staff directory.
+     *
+     * Returns every Admin/Staff account regardless of status. Filtering to
+     * Active here used to make a deactivated account vanish from the only UI
+     * that can edit it, so there was no way to reactivate anyone - the page
+     * shows the status instead and lets an admin change it.
      */
     public function getStaff() {
         $stmt = $this->pdo->prepare("
             SELECT user_id, first_name, last_name, email, role, status
             FROM users
-            WHERE role IN (?, ?) AND status = ?
-            ORDER BY first_name, last_name
+            WHERE role IN (?, ?)
+            ORDER BY status = ? DESC, first_name, last_name
         ");
         $stmt->execute([ROLE_ADMIN, ROLE_STAFF, USER_STATUS_ACTIVE]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Count Active users holding the Admin role, optionally ignoring one user.
+     *
+     * Guards against locking the organization out of its own admin area:
+     * Staff, Campaigns and Reports are all Admin-gated, so demoting,
+     * deactivating or deleting the last administrator is unrecoverable
+     * through the UI.
+     */
+    public function countActiveAdmins($excludeUserId = null) {
+        if ($excludeUserId) {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) AS count FROM users
+                WHERE role = ? AND status = ? AND user_id != ?
+            ");
+            $stmt->execute([ROLE_ADMIN, USER_STATUS_ACTIVE, $excludeUserId]);
+        } else {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) AS count FROM users
+                WHERE role = ? AND status = ?
+            ");
+            $stmt->execute([ROLE_ADMIN, USER_STATUS_ACTIVE]);
+        }
+        $row = $stmt->fetch();
+        return (int)$row['count'];
     }
 }
 ?>

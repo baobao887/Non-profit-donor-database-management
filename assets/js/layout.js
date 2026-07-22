@@ -1,5 +1,5 @@
 import { initials, openModal, closeModal } from './utils.js';
-import { csrfHeaders } from './api.js';
+import { csrfHeaders } from './store.js';
 
 const NAV_ITEMS = [
   { href: 'dashboard.php', icon: 'fa-chart-line', label: 'Dashboard' },

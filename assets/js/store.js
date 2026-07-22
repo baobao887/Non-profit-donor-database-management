@@ -1,9 +1,94 @@
 /**
  * Data Store - API-Based (No localStorage, no mock data)
- * Fetches all data from MySQL database via PHP APIs
+ * Fetches all data from MySQL database via PHP APIs.
+ *
+ * This is the single data-access layer for the whole frontend. It provides
+ * both levels:
+ *   - the low-level fetch primitives below (csrfHeaders/apiGet/apiPost/
+ *     apiDelete), for pages that talk to an endpoint directly
+ *   - the named per-entity helpers further down (getDonors, addDonation, ...)
+ * Centralizing both here means only ONE file changes if the API base path,
+ * auth handling or error format ever changes.
  */
 
-import { csrfHeaders } from './api.js';
+/**
+ * CSRF token header for state-changing requests. The token is rendered
+ * into <meta name="csrf-token"> by includes/header.php and verified
+ * server-side by requireApiCsrf() in every mutating api/*.php endpoint.
+ */
+export function csrfHeaders() {
+  const token = document.querySelector('meta[name="csrf-token"]')?.content;
+  return token ? { 'X-CSRF-Token': token } : {};
+}
+
+/**
+ * GET JSON from a backend endpoint.
+ * Automatically redirects to login.php if the session is invalid (401).
+ * Throws on any non-2xx response, so callers can render their own error state.
+ */
+export async function apiGet(endpoint, params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const url = query ? `${endpoint}?${query}` : endpoint;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    credentials: 'same-origin', // send the PHP session cookie
+    headers: { 'Accept': 'application/json' },
+  });
+
+  return handleResponse(res);
+}
+
+/**
+ * POST JSON to a backend endpoint (create/update actions).
+ */
+export async function apiPost(endpoint, body = {}) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+    body: JSON.stringify(body),
+  });
+
+  return handleResponse(res);
+}
+
+/**
+ * DELETE to a backend endpoint.
+ */
+export async function apiDelete(endpoint, params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const url = query ? `${endpoint}?${query}` : endpoint;
+
+  const res = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { ...csrfHeaders() },
+  });
+
+  return handleResponse(res);
+}
+
+async function handleResponse(res) {
+  if (res.status === 401) {
+    // Session expired or not logged in — send back to login
+    window.location.href = 'login.php';
+    throw new Error('Unauthorized');
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('Invalid server response');
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+
+  return data;
+}
 
 let cache = null;
 let sessionCheckInterval = null;
@@ -513,17 +598,23 @@ export async function updateDonation(id, updates) {
 /**
  * Communication Functions
  */
-export async function getCommunications(page = 1) {
+/**
+ * Fetch one page of communications with server-side search + pagination,
+ * matching the getDonors/getDonations convention.
+ */
+export async function getCommunications({ page = 1, limit = 20, search = '' } = {}) {
   try {
-    const res = await fetch(`api/communications.php?action=list&page=${page}`);
+    const params = new URLSearchParams({ action: 'list', page, limit });
+    if (search) params.set('search', search);
+    const res = await fetch(`api/communications.php?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch communications');
     const data = await res.json();
     cache.communications = data.communications || [];
-    return { communications: cache.communications, total: data.total || 0, page: data.page || page, limit: data.limit || 20 };
+    return { communications: cache.communications, total: data.total || 0, page: data.page || page, limit: data.limit || limit };
   } catch (error) {
     reportLoadFailure();
     console.error('Error fetching communications:', error);
-    return { communications: [], total: 0, page, limit: 20 };
+    return { communications: [], total: 0, page, limit };
   }
 }
 

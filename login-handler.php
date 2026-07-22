@@ -62,6 +62,8 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Generic message to the client; the detail goes to the server log only.
+    error_log('Login handler error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'An error occurred during login']);
 }

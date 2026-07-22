@@ -1,7 +1,43 @@
 <?php
 /**
  * Application Constants
+ *
+ * This is the first file required by every entry point (api/*.php, the root
+ * routers, login-handler.php), so the environment/error-handling bootstrap
+ * below runs before any application code.
  */
+
+/**
+ * Application environment: 'development' (default) or 'production'.
+ * Set APP_ENV in the server environment on a live deployment — e.g. Apache
+ * `SetEnv APP_ENV production` in the vhost, or the container/systemd env.
+ */
+define('APP_ENV', getenv('APP_ENV') ?: 'development');
+
+if (APP_ENV === 'production') {
+    // Never render PHP errors into the response. Messages carry absolute file
+    // paths, SQL fragments and stack traces — information disclosure that also
+    // corrupts the JSON body of api/* responses. Log them server-side instead.
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    ini_set('log_errors', '1');
+
+    $logDir = dirname(__DIR__) . '/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    // Fall back to the SAPI log (Apache error_log) if the directory could not
+    // be created, rather than dropping errors on the floor entirely.
+    if (is_dir($logDir) && is_writable($logDir)) {
+        ini_set('error_log', $logDir . '/php-error.log');
+    }
+} else {
+    // Local development: surface everything immediately (XAMPP's usual behavior).
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+}
+
+error_reporting(E_ALL);
 
 // Currency
 define('CURRENCY_SYMBOL', '₱');
@@ -15,6 +51,12 @@ define('ROLE_STAFF', 'Staff');
 define('USER_STATUS_ACTIVE', 'Active');
 define('USER_STATUS_INACTIVE', 'Inactive');
 define('USER_STATUS_DISABLED', 'Disabled');
+
+define('USER_STATUSES', [
+    'Active',
+    'Inactive',
+    'Disabled'
+]);
 
 // Donor Status
 define('DONOR_STATUS_ACTIVE', 'Active');

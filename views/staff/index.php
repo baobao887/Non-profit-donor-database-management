@@ -9,9 +9,14 @@ $currentPage = 'staff.php';
 $assetPath = ASSET_URL;
 
 if (!checkSession()) {
-    header('Location: ' . ROOT_PATH . 'login.php');
+    header('Location: ' . appUrl('login.php'));
     exit;
 }
+
+// Defense in depth: this view is directly reachable under views/, so it must
+// enforce the same role its root router does - the router check alone is
+// bypassed by requesting this file's path directly.
+requireRole(ROLE_ADMIN);
 ?>
 <?php include INCLUDES_PATH . 'header.php'; ?>
 <div class="min-h-screen flex">
@@ -50,6 +55,14 @@ if (!checkSession()) {
             <option value="Admin">Admin</option>
           </select>
         </div>
+        <div class="form-field" id="staffStatusField"><label for="staffStatus">Status</label>
+          <select id="staffStatus" class="input-glass">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Disabled">Disabled</option>
+          </select>
+        </div>
+        <p id="staffStatusHint" class="text-slate-500 text-sm">New staff members start out Active.</p>
         <div class="flex gap-3 mt-6">
           <button class="btn-primary flex-1 py-3 rounded-2xl">Save</button>
           <button type="button" class="btn-secondary flex-1 py-3 rounded-2xl" data-close-modal="staffModal">Cancel</button>

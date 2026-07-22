@@ -202,11 +202,19 @@ try {
             if (!$donationId || !$paymentStatus) {
                 throw new Exception('Donation ID and status required');
             }
-            
+
             if (!in_array($paymentStatus, DONATION_STATUSES)) {
                 throw new Exception('Invalid payment status');
             }
-            
+
+            // Without this the model reads a missing row as `false`, emits
+            // "array offset on bool" warnings straight into the JSON body,
+            // and still reports success. Match the 'update' action above.
+            if (!$donationModel->getById($donationId)) {
+                http_response_code(404);
+                throw new Exception('Donation not found');
+            }
+
             $donationModel->updatePaymentStatus($donationId, $paymentStatus);
             
             logActivity(getCurrentUserId(), 'update', "Updated donation payment status to: $paymentStatus", 'donation', $donationId);

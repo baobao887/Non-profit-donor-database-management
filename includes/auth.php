@@ -48,7 +48,7 @@ function checkSession() {
 function requireRole($role) {
     requireAuth();
     if (($_SESSION['user']['role'] ?? null) !== $role) {
-        redirect('dashboard.php');
+        redirect(appUrl('dashboard.php'));
     }
 }
 
@@ -59,7 +59,7 @@ function requireRole($role) {
 function requireAnyRole($roles) {
     requireAuth();
     if (!in_array($_SESSION['user']['role'] ?? null, $roles, true)) {
-        redirect('dashboard.php');
+        redirect(appUrl('dashboard.php'));
     }
 }
 

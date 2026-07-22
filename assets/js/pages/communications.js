@@ -2,10 +2,16 @@ import { initStore, getCommunications, getDonorOptions, addCommunication, update
 import { formatDate, formatRelativeTime, initials, avatarClass, statusBadgeClass, openModal, closeModal, bindModalClose, showFormError, hideFormError } from '../utils.js';
 import { initLayout } from '../layout.js';
 
+const PAGE_SIZE = 20;
 let currentPage = 1;
 let currentItems = [];
 let totalItems = 0;
-let pageLimit = 20;
+let pageLimit = PAGE_SIZE;
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
 
 async function init() {
   await initStore();
@@ -18,7 +24,9 @@ async function init() {
 
   document.getElementById('openAddNote')?.addEventListener('click', () => openAddModal());
   document.getElementById('commForm')?.addEventListener('submit', saveNote);
-  document.getElementById('commSearch')?.addEventListener('input', renderList);
+  // Searching now re-queries the server (debounced) so matches on later pages
+  // are found, instead of filtering only the page already on screen.
+  document.getElementById('commSearch')?.addEventListener('input', debounce(() => renderTimeline(1), 300));
   document.getElementById('commPrevPage')?.addEventListener('click', () => renderTimeline(currentPage - 1));
   document.getElementById('commNextPage')?.addEventListener('click', () => renderTimeline(currentPage + 1));
 }
@@ -29,8 +37,21 @@ function populateDonorSelect(donors) {
   sel.innerHTML = donors.map((d) => `<option value="${d.donor_id}">${escapeHtml(`${d.first_name} ${d.last_name}`)}</option>`).join('');
 }
 
+function currentSearch() {
+  return document.getElementById('commSearch')?.value.trim() || '';
+}
+
 async function renderTimeline(page) {
-  const data = await getCommunications(Math.max(1, page));
+  const search = currentSearch();
+  let data = await getCommunications({ page: Math.max(1, page), limit: PAGE_SIZE, search });
+
+  // If the requested page fell past the end of a narrowed result set, snap
+  // back to the real last page and refetch.
+  const totalPages = Math.max(1, Math.ceil((data.total || 0) / PAGE_SIZE));
+  if (data.page > totalPages) {
+    data = await getCommunications({ page: totalPages, limit: PAGE_SIZE, search });
+  }
+
   currentItems = data.communications;
   totalItems = data.total;
   pageLimit = data.limit;
@@ -40,17 +61,14 @@ async function renderTimeline(page) {
   renderPagination();
 }
 
-// Renders the cached page of communications, applying the search box
-// client-side so typing never re-fetches from the API.
+// Renders the page of communications returned by the server. Search and
+// pagination are both applied server-side, so this just draws what it's given.
 function renderList() {
   const container = document.getElementById('communications-list');
   if (!container) return;
 
-  const q = document.getElementById('commSearch')?.value.trim().toLowerCase() || '';
-  const items = !q ? currentItems : currentItems.filter((c) =>
-    `${c.first_name} ${c.last_name}`.toLowerCase().includes(q)
-    || c.type.toLowerCase().includes(q)
-    || c.content.toLowerCase().includes(q));
+  const q = currentSearch();
+  const items = currentItems;
 
   container.innerHTML = items.length ? items.map((c, i) => {
     const donorName = `${c.first_name} ${c.last_name}`;

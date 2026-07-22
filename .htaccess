@@ -8,16 +8,26 @@ DirectoryIndex index.php index.html
 # Enable mod_rewrite
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
+
     # Set the base path
     RewriteBase /Non-profit-donor-database-management/
-    
+
+    # Server-side-only directories. These are reached through PHP include(),
+    # never over HTTP, so deny them outright. Without this the rules below let
+    # any real file through - database/database.sql (schema + seeded password
+    # hashes) was downloadable by anyone, unauthenticated. Patterns here are
+    # relative to this .htaccess, so they hold wherever the app is deployed.
+    RewriteRule ^(database|docs|tests|logs|config|includes|models)/ - [F,L]
+
+    # Repository files that must never be served, wherever they live.
+    RewriteRule \.(sql|md|log)$ - [F,L]
+
     # Don't rewrite if it's a real file
     RewriteCond %{REQUEST_FILENAME} !-f
-    
+
     # Don't rewrite if it's a real directory
     RewriteCond %{REQUEST_FILENAME} !-d
-    
+
     # Rewrite URLs to index.php or PHP files
     RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
@@ -26,6 +36,11 @@ DirectoryIndex index.php index.html
 <IfModule mod_autoindex.c>
     Options -Indexes
 </IfModule>
+
+# Second line of defense, in case mod_rewrite is unavailable.
+<FilesMatch "\.(sql|md|log)$">
+    Require all denied
+</FilesMatch>
 
 # Set proper encoding
 AddType text/html;charset=UTF-8 .html .php

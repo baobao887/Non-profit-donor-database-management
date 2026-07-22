@@ -14,4 +14,8 @@ if (!checkSession()) {
     exit;
 }
 
+// Campaign detail is part of the Campaigns section, which campaigns.php gates
+// to Admin - this router was the one way into that section without a check.
+requireRole(ROLE_ADMIN);
+
 require_once VIEWS_PATH . 'campaigns/detail.php';

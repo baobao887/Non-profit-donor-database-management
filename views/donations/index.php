@@ -9,7 +9,7 @@ $currentPage = 'donations.php';
 $assetPath = ASSET_URL;
 
 if (!checkSession()) {
-    header('Location: ' . ROOT_PATH . 'login.php');
+    header('Location: ' . appUrl('login.php'));
     exit;
 }
 ?>

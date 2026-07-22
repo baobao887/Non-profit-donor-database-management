@@ -117,8 +117,7 @@ donortrack/
 │   ├── css/
 │   │   └── style.css        # Styling
 │   └── js/
-│       ├── store.js         # Data-fetching layer (entity CRUD)
-│       ├── api.js           # Shared fetch wrapper
+│       ├── store.js         # Data-access layer: fetch wrapper + entity CRUD
 │       ├── charts.js        # Chart.js setup
 │       ├── layout.js        # Sidebar/topbar rendering
 │       ├── utils.js         # Formatting helpers

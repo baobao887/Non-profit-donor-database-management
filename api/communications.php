@@ -8,6 +8,7 @@ require_once '../config/database.php';
 require_once '../includes/functions.php';
 require_once '../includes/auth.php';
 require_once '../models/Communication.php';
+require_once '../models/Donor.php';
 
 header('Content-Type: application/json');
 
@@ -22,22 +23,29 @@ requireApiCsrf();
 try {
     $pdo = getDB();
     $communicationModel = new Communication($pdo);
-    
+    $donorModel = new Donor($pdo);
+
     $method = $_SERVER['REQUEST_METHOD'];
     $action = $_GET['action'] ?? null;
     
     // GET requests
     if ($method === 'GET') {
         if ($action === 'list') {
-            $page = (int)($_GET['page'] ?? 1);
-            $communications = $communicationModel->getAll($page, ITEMS_PER_PAGE);
-            $total = $communicationModel->getTotalCount();
-            
+            // Search is applied in SQL across the whole table; filtering only
+            // the current page client-side made matches on later pages
+            // invisible.
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = min(100, max(1, (int)($_GET['limit'] ?? ITEMS_PER_PAGE)));
+            $search = trim($_GET['search'] ?? '');
+
+            $communications = $communicationModel->getFiltered($page, $limit, $search);
+            $total = $communicationModel->countFiltered($search);
+
             echo json_encode([
                 'communications' => $communications,
                 'total' => $total,
                 'page' => $page,
-                'limit' => ITEMS_PER_PAGE
+                'limit' => $limit
             ]);
         }
         elseif ($action === 'get' && isset($_GET['id'])) {
@@ -90,6 +98,12 @@ try {
 
             if (!in_array($type, COMMUNICATION_TYPES)) {
                 throw new Exception('Invalid communication type');
+            }
+
+            // Check the donor exists rather than letting the foreign key fail,
+            // which would surface as a generic 500. Mirrors donations.php.
+            if (!$donorModel->getById($donorId)) {
+                throw new Exception('Donor not found');
             }
 
             $communicationId = $communicationModel->create($donorId, $type, $content, $staffId, $status);
@@ -157,7 +171,19 @@ try {
             if (!$communicationId || !$status) {
                 throw new Exception('Communication ID and status required');
             }
-            
+
+            // Validate before hitting the ENUM column: STRICT mode would
+            // reject a bad value as a PDOException, which surfaces to the
+            // user as a generic 500 instead of naming the real problem.
+            if (!in_array($status, COMMUNICATION_STATUSES)) {
+                throw new Exception('Invalid status');
+            }
+
+            if (!$communicationModel->getById($communicationId)) {
+                http_response_code(404);
+                throw new Exception('Communication not found');
+            }
+
             $communicationModel->updateStatus($communicationId, $status);
             
             logActivity(getCurrentUserId(), 'update', "Updated communication status to: $status", 'communication', $communicationId);

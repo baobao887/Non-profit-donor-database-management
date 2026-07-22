@@ -39,6 +39,65 @@ class Communication {
     }
     
     /**
+     * Build the shared WHERE clause + bound params for the filtered list and
+     * count below. Search matches donor name, type or content - the same
+     * fields the page previously filtered client-side, but across the whole
+     * table rather than only the rows already loaded. All terms are bound.
+     */
+    private function buildFilters($search) {
+        $clauses = [];
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $like = '%' . $search . '%';
+            $clauses[] = "(d.first_name LIKE ? OR d.last_name LIKE ? OR CONCAT(d.first_name, ' ', d.last_name) LIKE ? OR c.type LIKE ? OR c.content LIKE ?)";
+            array_push($params, $like, $like, $like, $like, $like);
+        }
+
+        $where = $clauses ? ('WHERE ' . implode(' AND ', $clauses)) : '';
+        return [$where, $params];
+    }
+
+    /**
+     * One page of communications matching an optional search term.
+     */
+    public function getFiltered($page, $limit, $search = '') {
+        $offset = ($page - 1) * $limit;
+        [$where, $params] = $this->buildFilters($search);
+        $sql = "
+            SELECT c.*, d.first_name, d.last_name, u.first_name as staff_first_name, u.last_name as staff_last_name
+            FROM communications c
+            JOIN donors d ON c.donor_id = d.donor_id
+            LEFT JOIN users u ON c.staff_id = u.user_id
+            $where
+            ORDER BY c.created_at DESC
+            LIMIT ? OFFSET ?
+        ";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Total rows matching the same search, for "Page X of Y" display.
+     */
+    public function countFiltered($search = '') {
+        [$where, $params] = $this->buildFilters($search);
+        $sql = "
+            SELECT COUNT(*) AS count
+            FROM communications c
+            JOIN donors d ON c.donor_id = d.donor_id
+            $where
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+        return (int)$row['count'];
+    }
+
+    /**
      * Get recent communications
      */
     public function getRecent($limit = 10) {

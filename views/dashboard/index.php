@@ -11,7 +11,7 @@ $assetPath = ASSET_URL;
  
 // Check authentication
 if (!checkSession()) {
-    header('Location: ' . ROOT_PATH . 'login.php');
+    header('Location: ' . appUrl('login.php'));
     exit;
 }
 ?>

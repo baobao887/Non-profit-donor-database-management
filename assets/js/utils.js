@@ -51,8 +51,13 @@ export function statusBadgeClass(status) {
   const map = {
     Active: 'bg-emerald-100 text-emerald-700', Succeeded: 'bg-emerald-100 text-emerald-700', Sent: 'bg-emerald-100 text-emerald-700', Live: 'bg-emerald-100 text-emerald-700',
     Pending: 'bg-amber-100 text-amber-700', Processing: 'bg-amber-100 text-amber-700', 'In review': 'bg-sky-100 text-sky-700',
-    Inactive: 'bg-slate-100 text-slate-700', Refund: 'bg-rose-100 text-rose-700', Paused: 'bg-amber-100 text-amber-700', Planning: 'bg-sky-100 text-sky-700',
+    Inactive: 'bg-slate-100 text-slate-700', Paused: 'bg-amber-100 text-amber-700', Planning: 'bg-sky-100 text-sky-700',
     Completed: 'bg-violet-100 text-violet-700', Archived: 'bg-slate-100 text-slate-700',
+    // Keys must match the DB enum values exactly. 'Refund' was a typo for
+    // 'Refunded' and 'Failed' was missing, so both rendered as neutral grey -
+    // out of step with getStatusBadgeClass() in includes/functions.php, which
+    // marks each of them as danger.
+    Refunded: 'bg-rose-100 text-rose-700', Failed: 'bg-rose-100 text-rose-700', Disabled: 'bg-rose-100 text-rose-700',
   };
   return map[status] || 'bg-slate-100 text-slate-700';
 }
@@ -71,6 +76,19 @@ export function exportCsv(filename, rows, columns) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+/**
+ * Show a simple error state inside a container element.
+ * Use this in every page's catch block for consistent UX.
+ */
+export function renderError(container, message = 'Something went wrong. Please try again.') {
+  if (!container) return;
+  container.innerHTML = `
+    <div class="text-center text-slate-500 py-8">
+      <i class="fa-solid fa-triangle-exclamation text-amber-500 mb-2 text-xl"></i>
+      <p>${message}</p>
+    </div>`;
 }
 
 /**

@@ -9,9 +9,14 @@ $currentPage = 'reports.php';
 $assetPath = ASSET_URL;
 
 if (!checkSession()) {
-    header('Location: ' . ROOT_PATH . 'login.php');
+    header('Location: ' . appUrl('login.php'));
     exit;
 }
+
+// Defense in depth: this view is directly reachable under views/, so it must
+// enforce the same role its root router does - the router check alone is
+// bypassed by requesting this file's path directly.
+requireRole(ROLE_ADMIN);
 ?>
 <?php include INCLUDES_PATH . 'header.php'; ?>
 <div class="min-h-screen flex">

@@ -134,6 +134,18 @@ function redirect($path) {
 }
 
 /**
+ * Build a root-relative app URL for redirects.
+ *
+ * Never use ROOT_PATH for this - that is a filesystem path (C:\xampp\...),
+ * which produces a broken Location header. Falls back to a bare relative
+ * path when BASE_URL isn't loaded, since api/*.php don't include paths.php.
+ */
+function appUrl($path) {
+    $base = defined('BASE_URL') ? BASE_URL : '';
+    return $base . ltrim($path, '/');
+}
+
+/**
  * Check if user is authenticated
  */
 function isAuthenticated() {
@@ -173,7 +185,7 @@ function isStaff() {
  */
 function requireAuth() {
     if (!isAuthenticated()) {
-        redirect('login.php');
+        redirect(appUrl('login.php'));
     }
 }
 
@@ -251,7 +263,7 @@ function generateCSRFToken() {
 
 /**
  * Reject state-changing API requests that lack a valid CSRF token.
- * The frontend (assets/js/api.js) reads the token from the <meta
+ * The frontend (assets/js/store.js) reads the token from the <meta
  * name="csrf-token"> tag in includes/header.php and sends it back as an
  * X-CSRF-Token header on every POST/PUT/DELETE. GET requests pass through.
  */

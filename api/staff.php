@@ -129,6 +129,29 @@ try {
                 throw new Exception('Role must be "Admin" or "Staff"');
             }
 
+            // Validate before hitting the ENUM column, so a bad value reads as
+            // a validation error rather than a generic 500 from STRICT mode.
+            if (!in_array($status, USER_STATUSES)) {
+                throw new Exception('Invalid status');
+            }
+
+            $isSelf = $userId === (int)getCurrentUserId();
+            $losesAdmin = $user['role'] === ROLE_ADMIN
+                && ($role !== ROLE_ADMIN || $status !== USER_STATUS_ACTIVE);
+
+            // You cannot strip your own admin access - the UI you'd need to
+            // undo it is itself Admin-gated.
+            if ($isSelf && $losesAdmin) {
+                throw new Exception('You cannot remove your own admin access');
+            }
+
+            // Nor can the last remaining administrator be demoted or
+            // deactivated by anyone, which would lock everyone out of Staff,
+            // Campaigns and Reports for good.
+            if ($losesAdmin && $userModel->countActiveAdmins($userId) === 0) {
+                throw new Exception('This is the only active administrator - promote another admin first');
+            }
+
             $userModel->update($userId, $firstName, $lastName, $email, $role, $status);
 
             logActivity(getCurrentUserId(), 'update', "Updated staff member: $firstName $lastName", 'user', $userId);
@@ -162,6 +185,12 @@ try {
 
             if ($userId === (int)getCurrentUserId()) {
                 throw new Exception('You cannot remove your own account');
+            }
+
+            // Deleting the last active administrator is unrecoverable through
+            // the UI, since every admin screen is Admin-gated.
+            if ($user['role'] === ROLE_ADMIN && $userModel->countActiveAdmins($userId) === 0) {
+                throw new Exception('This is the only active administrator - promote another admin first');
             }
 
             $userModel->delete($userId);

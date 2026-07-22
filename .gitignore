@@ -1,0 +1,6 @@
+# Local database credentials — copy config/database.example.php to
+# config/database.php on a new checkout. Never commit real credentials.
+config/database.php
+
+# Runtime error logs (see APP_ENV handling in config/constants.php)
+logs/
