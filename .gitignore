@@ -4,3 +4,7 @@ config/database.php
 
 # Runtime error logs (see APP_ENV handling in config/constants.php)
 logs/
+
+# Tailwind standalone CLI binary (~40 MB) — download per README, never commit.
+# The compiled assets/css/app.css IS committed and served directly.
+tools/tailwindcss.exe

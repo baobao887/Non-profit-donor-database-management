@@ -8,7 +8,7 @@ The prompt that generated this document assumed a classic MVC stack (Controllers
 
 | Assumption | Reality in this codebase |
 |---|---|
-| Bootstrap CSS framework | **Tailwind CSS** loaded via CDN (`<script src="https://cdn.tailwindcss.com">` in [includes/header.php](../includes/header.php)) + **Font Awesome 6** icons + a small custom stylesheet ([assets/css/style.css](../assets/css/style.css)) for glass-morphism cards, badges, modals, sidebar. No Bootstrap file exists anywhere. |
+| Bootstrap CSS framework | **Tailwind CSS v3**, compiled locally with the standalone CLI (no Node) — design tokens in [tailwind.config.js](../tailwind.config.js), component layer in [assets/css/tailwind.css](../assets/css/tailwind.css), built into the committed [assets/css/app.css](../assets/css/app.css) that [includes/header.php](../includes/header.php) links. Plus **Font Awesome 6** icons. No CDN Tailwind, no Bootstrap file exists anywhere. |
 | `controllers/` folder | Defined as a constant in [config/paths.php](../config/paths.php) (`CONTROLLERS_PATH`) but **the folder doesn't exist and nothing requires it**. The `api/*.php` files play the controller role directly — they parse the request, call a Model, and emit JSON. |
 | `middleware/` folder | Doesn't exist. Auth/role gating is a set of plain functions in [includes/auth.php](../includes/auth.php) and [includes/functions.php](../includes/functions.php) (`checkSession`, `requireAuth`, `requireRole`, `requireAnyRole`, `requireApiRole`), called at the top of each page router / API file. |
 | Server-rendered tables/charts | The PHP views only emit **empty containers** (`<tbody id="...">`, `<canvas id="...">`, `<div id="...">`). All table rows, cards, and chart data are built by JavaScript after a `fetch()` call to an API endpoint. PHP does no data rendering — it only handles auth gating and layout shell. |
@@ -55,7 +55,7 @@ flowchart TD
 
 **Where each file belongs:**
 
-- **Presentation**: everything under `views/`, `assets/js/pages/`, `assets/js/{api,store,utils,layout,charts}.js`, `assets/css/style.css`
+- **Presentation**: everything under `views/`, `assets/js/pages/`, `assets/js/{api,store,utils,layout,charts}.js`, `assets/css/tailwind.css` (source) → `assets/css/app.css` (compiled)
 - **Routing**: `index.php`, `login.php`, `dashboard.php`, `donors.php`, `donor-profile.php`, `donations.php`, `campaigns.php`, `campaign-detail.php`, `communications.php`, `reports.php`, `staff.php`, `logout.php`
 - **Business logic**: `api/*.php` (8 files) + `includes/auth.php` + `includes/functions.php`
 - **Data access**: `models/*.php` (5 classes)
@@ -91,7 +91,7 @@ Non-profit-donor-database-management/
 ├── includes/
 │   ├── auth.php                  Session lifecycle: checkSession, loginUser, logoutUser, authenticateUser, createUser, updateUserPassword, requireRole, requireAnyRole
 │   ├── functions.php              Formatting/validation/security helpers shared by every page & API: formatCurrency, sanitize, hashPassword, isAdmin, requireApiRole, logActivity, etc.
-│   ├── header.php                 <head> — Tailwind CDN, Google Fonts, Font Awesome CDN, style.css; opens <body>
+│   ├── header.php                 <head> — compiled css/app.css, Google Fonts, Font Awesome CDN; opens <body>
 │   ├── footer.php                 Closes </body></html>
 │   ├── navbar.php                 Empty <header> shell — actual topbar HTML is injected by assets/js/layout.js
 │   └── sidebar.php                Static shell (logo, mobile menu button) — nav links injected by assets/js/layout.js
@@ -126,7 +126,8 @@ Non-profit-donor-database-management/
 │   └── staff/index.php              Staff card grid + Add/Edit staff modal
 │
 ├── assets/
-│   ├── css/style.css               Custom design-system layer on top of Tailwind: CSS variables, `.card-glass`, `.badge`, `.btn-primary`, `.modal`, `.sidebar-panel`, avatar colors, etc.
+│   ├── css/tailwind.css            Tailwind input: base tokens + `@layer components` design system (`.card`, `.badge`, `.btn-primary`, `.modal-panel`, `.sidebar-panel`, avatar colors, etc.)
+│   ├── css/app.css                 Compiled + minified output (committed, served directly). Rebuild with tools/build-css.ps1 — see README.
 │   ├── images/                     Logo/favicon assets referenced by header.php/sidebar.php
 │   └── js/
 │       ├── api.js                   Shared fetch wrapper: apiGet/apiPost/apiDelete + 401→login.php redirect + renderError()

@@ -4,6 +4,29 @@ A comprehensive web application for managing donors, campaigns, and donations fo
 
 **Status:** Complete ✅ — PHP/MySQL backend with all pages converted from the original static prototype
 
+## Frontend build (Tailwind CSS)
+
+The UI is styled with **Tailwind CSS v3**, compiled locally with the **standalone CLI** — no Node.js, npm, or `package.json` required. Design tokens (colors, radius, shadow, type) live in [`tailwind.config.js`](tailwind.config.js); the component layer and base tokens live in [`assets/css/tailwind.css`](assets/css/tailwind.css). Both compile into [`assets/css/app.css`](assets/css/app.css), which **is committed and served directly** — so the app runs with **no build step at runtime**. You only rebuild after changing a class in a `.php` view or an `assets/js/*.js` file.
+
+**One-time setup** — download the standalone binary into `tools/` (git-ignored, ~40 MB):
+
+```powershell
+# from the project root
+curl.exe -L -o tools/tailwindcss.exe https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-windows-x64.exe
+```
+
+**Rebuild the CSS:**
+
+```powershell
+# minified — run before committing
+tools/tailwindcss.exe -i assets/css/tailwind.css -o assets/css/app.css --minify
+
+# or watch mode while editing styles
+tools/tailwindcss.exe -i assets/css/tailwind.css -o assets/css/app.css --watch
+```
+
+Or use the helper: `powershell -File tools/build-css.ps1` (append `-Watch` for watch mode; it downloads the binary automatically if missing).
+
 ## Overview
 
 DonorTrack is a web-based donor management system designed for non-profit organizations to centralize and manage donor-related information. The system replaces manual record-keeping (such as spreadsheets and paper records) with a structured relational database that allows staff and administrators to efficiently manage donors, donations, fundraising campaigns, communication history, and reports.

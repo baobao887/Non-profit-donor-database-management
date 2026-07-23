@@ -115,7 +115,8 @@ donortrack/
 │   └── reports.php          # Report aggregates
 ├── assets/
 │   ├── css/
-│   │   └── style.css        # Styling
+│   │   ├── tailwind.css     # Tailwind input (tokens + component layer)
+│   │   └── app.css          # Compiled output, served directly (see README build step)
 │   └── js/
 │       ├── store.js         # Data-access layer: fetch wrapper + entity CRUD
 │       ├── charts.js        # Chart.js setup

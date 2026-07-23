@@ -1,0 +1,363 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   BASE — design tokens + document defaults
+   Tokens are exposed as CSS custom properties so component rules and the inline
+   CSS variables set by the page JS (e.g. --campaign-progress-value) share one
+   vocabulary. Legacy aliases (--primary, --text-strong, …) are kept so any
+   lingering reference resolves to the new palette.
+   ========================================================================== */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Brand — warm indigo / iris */
+    --brand-50:#F2F1FD; --brand-100:#E6E4FB; --brand-200:#CFCBF7; --brand-300:#B0A9F1;
+    --brand-400:#9086E9; --brand-500:#7468DE; --brand-600:#5F51D0; --brand-700:#4E40B8;
+    --brand-800:#3F3596; --brand-900:#342C78;
+
+    /* Neutrals — warm gray */
+    --ink-50:#FAF9F7; --ink-100:#F2F0EC; --ink-200:#E5E2DC; --ink-300:#D2CEC6;
+    --ink-400:#A8A29A; --ink-500:#78726A; --ink-600:#5C564E; --ink-700:#44403A;
+    --ink-800:#2E2A25; --ink-900:#211E1A;
+
+    /* Surfaces */
+    --canvas:#F6F4F0; --surface:#FDFCFA; --surface-2:#F2F0EC;
+    --border:#E5E2DC; --border-strong:#D2CEC6;
+
+    /* Semantic */
+    --success-50:#ECFDF3; --success-100:#D1FADF; --success-600:#039855; --success-700:#027A48;
+    --warning-50:#FFFAEB; --warning-100:#FEF0C7; --warning-600:#DC6803; --warning-700:#B54708;
+    --danger-50:#FEF3F2;  --danger-100:#FEE4E2;  --danger-600:#D92D20;  --danger-700:#B42318;
+    --info-50:#EFF8FF;    --info-100:#D1E9FF;    --info-600:#1570EF;    --info-700:#175CD3;
+
+    /* Radius / elevation / focus */
+    --r-control:10px; --r-card:16px; --r-panel:20px; --r-pill:9999px;
+    --sh-card:0 1px 2px rgba(33,30,26,.04), 0 1px 3px rgba(33,30,26,.06);
+    --sh-md:0 2px 4px rgba(33,30,26,.04), 0 4px 12px rgba(33,30,26,.07);
+    --sh-pop:0 8px 24px rgba(33,30,26,.12);
+    --sh-modal:0 20px 48px rgba(33,30,26,.18);
+    --focus:0 0 0 3px rgba(95,81,208,.28);
+
+    /* Legacy aliases — keep old references resolving to the new palette */
+    --primary:var(--brand-600); --primary-soft:var(--brand-100);
+    --secondary:var(--success-600); --accent:var(--brand-500);
+    --success:var(--success-600); --warning:var(--warning-600); --error:var(--danger-600);
+    --text-strong:var(--ink-800); --text-muted:var(--ink-500);
+    --bg:var(--canvas); --bg-panel:var(--surface); --bg-panel-strong:var(--surface);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    min-height: 100vh;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink-800);
+    /* Warm canvas with a whisper of brand tint at the top for depth. */
+    background: radial-gradient(1200px 460px at 50% -12%, rgba(95,81,208,.045), transparent 60%), var(--canvas);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, input, select, textarea { font-family: inherit; }
+
+  /* Visible keyboard focus everywhere by default (components refine their own). */
+  :focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
+  .fade-in { animation: fadeIn .3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  }
+}
+
+/* ============================================================================
+   COMPONENTS — the reusable vocabulary every page composes.
+   Class names are preserved from the previous stylesheet so no markup or JS
+   hook changes; only their definitions are rebuilt on the tokens above.
+   ========================================================================== */
+@layer components {
+
+  /* ---- App shell / layout ---------------------------------------------- */
+  .min-h-screen { min-height: 100vh; }
+
+  .sidebar-panel {
+    width: 264px; min-width: 264px; height: 100vh;
+    position: sticky; top: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .brand-logo { border-bottom: 1px solid var(--border); }
+  .sidebar-top { padding-top: 1.5rem; padding-bottom: 1.25rem; }
+
+  .nav-link {
+    display: flex; align-items: center;
+    border-radius: var(--r-control);
+    font-size: .925rem; font-weight: 500;
+    color: var(--ink-600);
+    transition: background .18s ease, color .18s ease;
+  }
+  .nav-link:hover { background: var(--ink-100); color: var(--ink-900); }
+  .nav-link[aria-current="page"] { background: var(--brand-600); color: #fff; }
+
+  .dashboard-header { min-height: 50px; }
+
+  .search-box {
+    border-radius: var(--r-control);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: var(--r-control);
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--ink-700);
+    transition: background .18s ease, border-color .18s ease;
+  }
+  .icon-button:hover { background: var(--ink-50); border-color: var(--border-strong); }
+
+  .profile-pill {
+    border-radius: var(--r-control);
+    background: var(--surface); border: 1px solid var(--border);
+    transition: background .18s ease;
+  }
+  .profile-pill:hover { background: var(--ink-50); }
+
+  /* Mobile off-canvas trigger / overlay (behavior identical to before) */
+  .mobile-menu-btn {
+    display: none; position: fixed; top: 16px; left: 16px; z-index: 60;
+    width: 48px; height: 48px; border-radius: var(--r-control);
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink-800);
+    box-shadow: var(--sh-card);
+  }
+  .sidebar-close-btn {
+    display: none; width: 40px; height: 40px; border-radius: var(--r-control);
+    border: 1px solid var(--border); background: transparent; color: var(--ink-500);
+  }
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0; z-index: 40;
+    background: rgba(33,30,26,.45); backdrop-filter: blur(2px);
+  }
+
+  /* ---- Cards ----------------------------------------------------------- */
+  .card,
+  .metric-card, .card-glass, .campaign-card,
+  .timeline-item, .activity-item, .donor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-card);
+    box-shadow: var(--sh-card);
+  }
+  .card-hover, .metric-card { transition: box-shadow .2s ease, transform .2s ease; }
+  .card-hover:hover, .metric-card:hover { box-shadow: var(--sh-md); transform: translateY(-2px); }
+
+  .icon-chip {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* ---- Page header + typographic helpers ------------------------------- */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .page-title { font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink-900); }
+  .page-subtitle { font-size: .875rem; color: var(--ink-500); margin-top: .25rem; }
+  .eyebrow { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-500); }
+  .stat-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-500); }
+  .stat-number { font-size: 1.875rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+
+  /* Comparison chip for KPI cards (used only where real period-over-period
+     data exists — never fabricated). */
+  .trend { display: inline-flex; align-items: center; gap: .25rem; padding: .1875rem .5rem; border-radius: var(--r-pill); font-size: .75rem; font-weight: 600; }
+  .trend-up { background: var(--success-100); color: var(--success-700); }
+  .trend-down { background: var(--danger-100); color: var(--danger-700); }
+
+  /* ---- Buttons --------------------------------------------------------- */
+  /* Markup uses each variant as a single class (no shared .btn base), so every
+     variant is self-contained. Inline utilities (py-3, rounded-2xl, flex-1)
+     still override these defaults, preserving existing layouts. */
+  .btn-primary, .btn-secondary, .btn-outline, .btn-primary-outline,
+  .btn-danger, .btn-danger-outline, .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    padding: .625rem 1.125rem; border-radius: var(--r-control);
+    font-size: .875rem; font-weight: 600; line-height: 1.2;
+    border: 1px solid transparent; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn-primary:focus-visible, .btn-secondary:focus-visible, .btn-outline:focus-visible,
+  .btn-primary-outline:focus-visible, .btn-danger:focus-visible,
+  .btn-danger-outline:focus-visible, .btn-ghost:focus-visible {
+    outline: none; box-shadow: var(--focus);
+  }
+  .btn-primary:disabled, .btn-secondary:disabled, .btn-outline:disabled,
+  .btn-primary-outline:disabled, .btn-danger:disabled, .btn-danger-outline:disabled {
+    opacity: .5; cursor: not-allowed;
+  }
+
+  .btn-primary { background: var(--brand-600); color: #fff; }
+  .btn-primary:hover { background: var(--brand-700); }
+
+  .btn-secondary { background: var(--surface); color: var(--ink-700); border-color: var(--border-strong); }
+  .btn-secondary:hover { background: var(--ink-50); }
+
+  .btn-outline, .btn-primary-outline { background: transparent; color: var(--brand-700); border-color: var(--brand-200); }
+  .btn-outline:hover, .btn-primary-outline:hover { background: var(--brand-50); }
+
+  .btn-danger { background: var(--danger-600); color: #fff; }
+  .btn-danger:hover { background: var(--danger-700); }
+
+  .btn-danger-outline { background: transparent; color: var(--danger-600); border-color: var(--danger-100); }
+  .btn-danger-outline:hover { background: var(--danger-50); }
+
+  .btn-ghost { background: transparent; color: var(--ink-600); }
+  .btn-ghost:hover { background: var(--ink-100); }
+
+  /* Size modifier declared after variants so it wins on padding without !important. */
+  .btn-sm { padding: .375rem .75rem; font-size: .8125rem; }
+
+  /* ---- Forms ----------------------------------------------------------- */
+  .form-field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+  .form-field[hidden] { display: none; }
+  .form-field label { font-size: .875rem; font-weight: 600; color: var(--ink-600); }
+
+  .input-glass {
+    width: 100%; padding: .625rem .75rem;
+    border-radius: var(--r-control);
+    border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--ink-800);
+    outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input-glass::placeholder { color: var(--ink-400); }
+  .input-glass:focus { border-color: var(--brand-400); box-shadow: var(--focus); }
+
+  /* ---- Status badges — dot + label, never colour alone ----------------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: .375rem;
+    padding: .25rem .625rem .25rem .5rem;
+    border-radius: var(--r-pill);
+    font-size: .75rem; font-weight: 600; line-height: 1.2;
+  }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+  .badge + .badge { margin-left: .5rem; }
+
+  /* ---- Avatars --------------------------------------------------------- */
+  .avatar {
+    width: 42px; height: 42px; border-radius: var(--r-control);
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--ink-100); color: var(--ink-700); font-weight: 700;
+  }
+  .avatar-blue   { background: var(--brand-100);   color: var(--brand-700); }
+  .avatar-violet { background: var(--brand-100);   color: var(--brand-800); }
+  .avatar-purple { background: var(--brand-50);    color: var(--brand-700); }
+  .avatar-sky    { background: var(--info-100);    color: var(--info-700); }
+  .avatar-rose   { background: var(--danger-100);  color: var(--danger-700); }
+  .avatar-emerald{ background: var(--success-100); color: var(--success-700); }
+
+  /* ---- Tables ---------------------------------------------------------- */
+  .table-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-control);
+    box-shadow: var(--sh-card);
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .table-row:hover { transform: translateY(-1px); box-shadow: var(--sh-md); }
+  .table-scroll thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: color-mix(in srgb, var(--canvas) 92%, transparent);
+    backdrop-filter: blur(6px);
+  }
+
+  /* ---- Progress: ring + linear goal bar -------------------------------- */
+  .progress-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+  .progress-ring {
+    width: 56px; height: 56px; border-radius: var(--r-pill);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: .75rem; color: var(--ink-800); position: relative;
+    background: conic-gradient(var(--campaign-progress-color, var(--brand-600)) calc(var(--campaign-progress-value, 0) * 1%), var(--ink-200) 0);
+  }
+  .progress-ring span {
+    width: 40px; height: 40px; border-radius: var(--r-pill);
+    background: var(--surface); display: grid; place-items: center;
+  }
+  @supports not (background: conic-gradient(red 50%, blue 0)) {
+    .progress-ring { background: var(--ink-200); }
+  }
+  .campaign-progress-track { background: var(--ink-200); }
+  .campaign-progress-bar { background: var(--campaign-progress-color, var(--brand-600)); }
+
+  /* Linear progress used by the new KPI/campaign cards */
+  .progress-track { height: 8px; border-radius: var(--r-pill); background: var(--ink-200); overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: var(--r-pill); background: var(--brand-600); }
+
+  /* ---- Charts ---------------------------------------------------------- */
+  .chart-canvas { width: 100% !important; height: 220px !important; max-height: 220px !important; display: block; }
+  .chart-canvas-compact { width: 100% !important; height: 180px !important; max-height: 180px !important; display: block; }
+
+  /* ---- Empty state ----------------------------------------------------- */
+  .empty-state { font-size: .95rem; color: var(--ink-500); }
+
+  /* ---- Modal ----------------------------------------------------------- */
+  .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 24px; }
+  .modal.modal-open { display: flex; }
+  .modal-backdrop { position: absolute; inset: 0; background: rgba(33,30,26,.5); backdrop-filter: blur(4px); }
+  .modal-panel {
+    position: relative; width: min(100%, 520px); max-height: 90vh; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-panel); padding: 28px; box-shadow: var(--sh-modal);
+  }
+  body.modal-active { overflow: hidden; }
+
+  /* ---- Popover menus (topbar) ----------------------------------------- */
+  .notification-menu {
+    position: absolute; right: 0; top: 3.25rem; z-index: 50; width: 19rem;
+    border: 1px solid var(--border); border-radius: var(--r-card);
+    background: var(--surface); box-shadow: var(--sh-pop); overflow: hidden;
+  }
+  .notification-menu a { display: block; padding: .85rem 1rem; color: var(--ink-600); font-size: .875rem; border-bottom: 1px solid var(--ink-100); }
+  .notification-menu a:hover { background: var(--ink-50); color: var(--brand-700); }
+
+  .profile-menu {
+    position: absolute; right: 0; top: 3.75rem; z-index: 50; width: 15rem; max-width: calc(100vw - 2rem);
+    border: 1px solid var(--border); border-radius: var(--r-card);
+    background: var(--surface); box-shadow: var(--sh-pop); overflow: hidden;
+    opacity: 0; visibility: hidden; transform: translateY(-6px); pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease, visibility .18s;
+  }
+  .profile-menu.open { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+  @media (hover: hover) {
+    .profile-pill-wrap:hover .profile-menu { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+  }
+  .profile-menu-header { padding: 1rem 1.1rem; border-bottom: 1px solid var(--ink-100); }
+  .profile-menu-name { font-weight: 600; font-size: .925rem; color: var(--ink-800); }
+  .profile-menu-role { font-size: .8rem; color: var(--ink-500); margin-top: .15rem; }
+  .profile-menu-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .85rem 1.1rem; color: var(--ink-700); font-size: .875rem; font-weight: 500; background: none; border: 0; text-align: left; cursor: pointer; }
+  .profile-menu-item:hover { background: var(--ink-100); }
+  .profile-menu-logout { display: flex; align-items: center; gap: .6rem; padding: .85rem 1.1rem; color: var(--danger-600); font-size: .875rem; font-weight: 500; }
+  .profile-menu-logout:hover { background: var(--danger-50); }
+}
+
+/* ============================================================================
+   RESPONSIVE — off-canvas sidebar (behavior preserved exactly)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .mobile-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+  .sidebar-close-btn { display: inline-flex; align-items: center; justify-content: center; }
+  .min-h-screen { display: block; }
+
+  .sidebar-panel {
+    position: fixed; top: 0; left: 0; bottom: 0; height: 100vh;
+    width: min(300px, 88vw); min-width: auto;
+    border-right: 1px solid var(--border); border-radius: 0;
+    z-index: 50; transform: translateX(-110%); transition: transform .28s ease;
+  }
+  body.sidebar-open .sidebar-panel { transform: translateX(0); }
+  body.sidebar-open .sidebar-overlay { display: block; }
+  .brand-logo { border-bottom: none; }
+
+  main { padding: 72px 16px 24px; }
+}
