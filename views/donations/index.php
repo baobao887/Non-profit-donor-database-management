@@ -19,35 +19,35 @@ if (!checkSession()) {
     <main class="flex-1 px-6 py-6">
       <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <p class="text-sm text-slate-500">Donations / Transactions</p>
+          <p class="eyebrow">Donations / Transactions</p>
           <h2 class="text-3xl font-semibold tracking-tight">Donation history</h2>
         </div>
         <div class="flex items-center gap-3">
           <button type="button" id="exportDonations" class="btn-secondary px-4 py-3 rounded-2xl">Export page</button>
-          <button type="button" id="openAddDonation" class="btn-primary px-5 py-3 rounded-2xl bg-sky-600 text-white">Log donation</button>
+          <button type="button" id="openAddDonation" class="btn-primary px-5 py-3 rounded-2xl">Log donation</button>
         </div>
       </header>
       <section class="grid lg:grid-cols-3 gap-6 mb-8">
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <p class="text-slate-500 uppercase text-xs tracking-[0.24em] mb-2">Revenue</p>
-          <p class="text-3xl font-semibold" id="stat-revenue">—</p>
-          <p class="text-sm text-slate-500 mt-2">Total recorded donations</p>
+        <div class="card-glass p-6">
+          <p class="eyebrow mb-2">Revenue</p>
+          <p class="stat-number" id="stat-revenue">—</p>
+          <p class="text-sm text-ink-500 mt-2">Total recorded donations</p>
         </div>
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <p class="text-slate-500 uppercase text-xs tracking-[0.24em] mb-2">Average gift</p>
-          <p class="text-3xl font-semibold" id="stat-avg">—</p>
+        <div class="card-glass p-6">
+          <p class="eyebrow mb-2">Average gift</p>
+          <p class="stat-number" id="stat-avg">—</p>
         </div>
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
-          <p class="text-slate-500 uppercase text-xs tracking-[0.24em] mb-2">Refund rate</p>
-          <p class="text-3xl font-semibold" id="stat-refund">—</p>
+        <div class="card-glass p-6">
+          <p class="eyebrow mb-2">Refund rate</p>
+          <p class="stat-number" id="stat-refund">—</p>
         </div>
       </section>
       <section class="card-glass p-6 overflow-hidden mb-8">
         <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
-          <div><h3 class="text-xl font-semibold">Transaction feed</h3><p class="text-slate-500">Filter and audit donations.</p></div>
+          <div><h3 class="text-xl font-semibold">Transaction feed</h3><p class="text-ink-500">Filter and audit donations.</p></div>
           <div class="flex flex-wrap items-center gap-3">
             <div class="relative">
-              <i class="fa-solid fa-search text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+              <i class="fa-solid fa-search text-ink-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
               <input type="search" id="donationSearch" placeholder="Search by donor or campaign..." class="input-glass w-64 pl-11" aria-label="Search by donor or campaign" />
             </div>
             <select id="filterStatus" class="input-glass w-auto min-w-[160px]" aria-label="Filter by status">
@@ -62,13 +62,13 @@ if (!checkSession()) {
         </div>
         <div class="overflow-x-auto table-scroll">
           <table class="min-w-full text-left border-separate border-spacing-y-3">
-            <thead class="text-slate-500 text-sm uppercase tracking-[0.18em]">
+            <thead class="text-ink-500 text-sm uppercase tracking-[0.18em]">
               <tr><th class="pb-3 pl-6">Donation</th><th class="pb-3">Donor</th><th class="pb-3">Date</th><th class="pb-3">Amount</th><th class="pb-3">Method</th><th class="pb-3">Status</th><th class="pb-3 pr-6">Actions</th></tr>
             </thead>
             <tbody id="donations-table-body"></tbody>
           </table>
         </div>
-        <div class="mt-6 flex items-center justify-between text-slate-600 text-sm">
+        <div class="mt-6 flex items-center justify-between text-ink-600 text-sm">
           <span id="donationShowingInfo">Showing —</span>
           <div class="inline-flex gap-2">
             <button type="button" id="donationPrevPage" class="btn-secondary px-4 py-2 rounded-3xl">Previous</button>
@@ -77,11 +77,11 @@ if (!checkSession()) {
         </div>
       </section>
       <section class="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+        <div class="card-glass p-6">
           <h3 class="text-xl font-semibold mb-5">Weekly donation pace</h3>
           <canvas id="donationsLineChart" class="chart-canvas" height="200"></canvas>
         </div>
-        <div class="card-glass p-6 shadow-xl rounded-[28px]">
+        <div class="card-glass p-6">
           <h3 class="text-xl font-semibold mb-5">Payment sources</h3>
           <canvas id="paymentMethodsChart" class="chart-canvas-compact" height="170"></canvas>
         </div>
@@ -93,7 +93,7 @@ if (!checkSession()) {
     <div class="modal-panel" role="dialog">
       <h3 class="text-xl font-semibold mb-5">Log donation</h3>
       <form id="donationForm">
-        <div id="donationFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+        <div id="donationFormError" class="mt-4 p-4 bg-danger-50 border border-danger-100 rounded-lg text-danger-700 hidden">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-circle-exclamation"></i>
             <span id="donationFormErrorText"></span>
@@ -122,10 +122,10 @@ if (!checkSession()) {
     <div class="modal-backdrop" data-close-modal="donationEditModal"></div>
     <div class="modal-panel" role="dialog">
       <h3 class="text-xl font-semibold mb-1">Edit donation</h3>
-      <p id="editDonationContext" class="text-slate-500 text-sm mb-5"></p>
+      <p id="editDonationContext" class="text-ink-500 text-sm mb-5"></p>
       <form id="donationEditForm">
         <input type="hidden" id="editDonationId" />
-        <div id="donationEditFormError" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden">
+        <div id="donationEditFormError" class="mt-4 p-4 bg-danger-50 border border-danger-100 rounded-lg text-danger-700 hidden">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-circle-exclamation"></i>
             <span id="donationEditFormErrorText"></span>

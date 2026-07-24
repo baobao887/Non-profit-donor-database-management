@@ -107,7 +107,7 @@ async function loadPage(p) {
 
 function showLoading() {
   const tbody = document.getElementById('donations-table-body');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-10 text-center text-slate-400">Loading donations…</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-10 text-center text-ink-400">Loading donations…</td></tr>';
   document.getElementById('donationShowingInfo')?.replaceChildren(document.createTextNode('Loading…'));
 }
 
@@ -119,17 +119,17 @@ function renderTable() {
   const statusFilter = document.getElementById('filterStatus')?.value || 'all';
 
   tbody.innerHTML = currentDonations.length ? currentDonations.map((d) => {
-    const methodIcon = METHOD_ICONS[d.payment_method] || 'fa-solid fa-building-columns text-indigo-600';
+    const methodIcon = METHOD_ICONS[d.payment_method] || 'fa-solid fa-building-columns';
     return `<tr class="table-row">
-      <td class="px-6 py-4"><p class="font-semibold">#${d.donation_id}</p><p class="text-slate-400 text-sm">${escapeHtml(campaignName(d))}</p></td>
+      <td class="px-6 py-4"><p class="font-semibold">#${d.donation_id}</p><p class="text-ink-400 text-sm">${escapeHtml(campaignName(d))}</p></td>
       <td class="py-4">${escapeHtml(donorName(d))}</td>
       <td class="py-4">${formatDate(d.donation_date)}</td>
       <td class="py-4 font-semibold">${formatCurrency(d.amount)}</td>
-      <td class="py-4"><span class="inline-flex items-center gap-2 text-slate-600"><i class="${methodIcon}"></i> ${d.payment_method}</span></td>
+      <td class="py-4"><span class="inline-flex items-center gap-2 text-ink-600"><i class="${methodIcon}"></i> ${d.payment_method}</span></td>
       <td class="py-4"><span class="badge ${statusBadgeClass(d.payment_status)}">${d.payment_status}</span></td>
       <td class="py-4 pr-6"><div class="flex gap-2"><button type="button" class="btn-primary-outline btn-sm" data-edit-donation="${d.donation_id}">Edit</button><button type="button" class="btn-primary-outline btn-sm" data-receipt="${d.donation_id}">Receipt</button></div></td>
     </tr>`;
-  }).join('') : `<tr><td colspan="7" class="empty-state px-6 py-10 text-center text-slate-500">${q || statusFilter !== 'all' ? 'No donations match your search.' : 'No donations found.'}</td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty-state px-6 py-10 text-center">${q || statusFilter !== 'all' ? 'No donations match your search.' : 'No donations found.'}</td></tr>`;
 
   const totalPages = Math.max(1, Math.ceil(totalDonations / PAGE_SIZE));
   const start = (page - 1) * PAGE_SIZE;
@@ -191,10 +191,10 @@ async function saveDonationEdit(e) {
 // Bank Transfer and Check intentionally fall through to the bank-building
 // default icon, matching the pre-Cash/GCash rendering.
 const METHOD_ICONS = {
-  Cash: 'fa-solid fa-money-bill-wave text-emerald-600',
-  GCash: 'fa-solid fa-mobile-screen-button text-blue-600',
-  Card: 'fa-solid fa-credit-card text-sky-600',
-  PayPal: 'fa-brands fa-cc-paypal text-slate-700',
+  Cash: 'fa-solid fa-money-bill-wave',
+  GCash: 'fa-solid fa-mobile-screen-button',
+  Card: 'fa-solid fa-credit-card',
+  PayPal: 'fa-brands fa-cc-paypal',
 };
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
