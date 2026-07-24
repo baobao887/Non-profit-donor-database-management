@@ -93,7 +93,7 @@ async function renderSummary() {
 
 function showLoading() {
   const tbody = document.getElementById('donors-table-body');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-10 text-center text-slate-400">Loading donors…</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-10 text-center text-ink-400">Loading donors…</td></tr>';
   document.getElementById('showingInfo')?.replaceChildren(document.createTextNode('Loading…'));
 }
 
@@ -109,7 +109,7 @@ function render() {
       <td class="px-6 py-4">
         <div class="flex items-center gap-3">
           <div class="avatar ${avatarClass(i)}">${initials(fullName(d))}</div>
-          <div><p class="font-semibold">${escapeHtml(fullName(d))}</p><p class="text-slate-400 text-sm">${escapeHtml(d.notes || '')}</p></div>
+          <div><p class="font-semibold">${escapeHtml(fullName(d))}</p><p class="text-ink-400 text-sm">${escapeHtml(d.notes || '')}</p></div>
         </div>
       </td>
       <td class="py-4">${escapeHtml(d.email || '')}</td>
@@ -125,7 +125,7 @@ function render() {
           ${isAdmin ? `<button type="button" class="btn-danger-outline btn-sm" data-delete="${d.donor_id}">Archive</button>` : ''}
         </div>
       </td>
-    </tr>`).join('') : `<tr><td colspan="8" class="empty-state px-6 py-10 text-center text-slate-500">No donors match your filters.</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="8" class="empty-state px-6 py-10 text-center">No donors match your filters.</td></tr>`;
 
   document.getElementById('pageInfo')?.replaceChildren(document.createTextNode(`Page ${page} of ${totalPages}`));
   document.getElementById('showingInfo')?.replaceChildren(document.createTextNode(`Showing ${totalDonors ? start + 1 : 0}–${Math.min(start + PAGE_SIZE, totalDonors)} of ${totalDonors}`));

@@ -13,10 +13,14 @@
   :root {
     color-scheme: light;
 
-    /* Brand — warm indigo / iris */
-    --brand-50:#F2F1FD; --brand-100:#E6E4FB; --brand-200:#CFCBF7; --brand-300:#B0A9F1;
-    --brand-400:#9086E9; --brand-500:#7468DE; --brand-600:#5F51D0; --brand-700:#4E40B8;
-    --brand-800:#3F3596; --brand-900:#342C78;
+    /* Brand — deep navy (institutional trust) */
+    --brand-50:#EDF2FB; --brand-100:#D6E2F5; --brand-200:#AFC7EA; --brand-300:#7EA0D6;
+    --brand-400:#4E76BE; --brand-500:#2F569C; --brand-600:#234B84; --brand-700:#1A3A66;
+    --brand-800:#152F50; --brand-900:#0F2039;
+
+    /* Accent — warm brass/gold. Charts/decorative variety only, never semantic. */
+    --accent-50:#FAF5EA; --accent-100:#F3E6C8; --accent-200:#E7CE95; --accent-300:#D9B45F;
+    --accent-400:#C99F3B; --accent-500:#B4882A; --accent-600:#977020; --accent-700:#795A1B;
 
     /* Neutrals — warm gray */
     --ink-50:#FAF9F7; --ink-100:#F2F0EC; --ink-200:#E5E2DC; --ink-300:#D2CEC6;
@@ -31,7 +35,7 @@
     --success-50:#ECFDF3; --success-100:#D1FADF; --success-600:#039855; --success-700:#027A48;
     --warning-50:#FFFAEB; --warning-100:#FEF0C7; --warning-600:#DC6803; --warning-700:#B54708;
     --danger-50:#FEF3F2;  --danger-100:#FEE4E2;  --danger-600:#D92D20;  --danger-700:#B42318;
-    --info-50:#EFF8FF;    --info-100:#D1E9FF;    --info-600:#1570EF;    --info-700:#175CD3;
+    --info-50:#ECFAFF;    --info-100:#CDEFFB;    --info-600:#0079AC;    --info-700:#0A5E82;
 
     /* Radius / elevation / focus */
     --r-control:10px; --r-card:16px; --r-panel:20px; --r-pill:9999px;
@@ -39,7 +43,7 @@
     --sh-md:0 2px 4px rgba(33,30,26,.04), 0 4px 12px rgba(33,30,26,.07);
     --sh-pop:0 8px 24px rgba(33,30,26,.12);
     --sh-modal:0 20px 48px rgba(33,30,26,.18);
-    --focus:0 0 0 3px rgba(95,81,208,.28);
+    --focus:0 0 0 3px rgba(35,75,132,.28);
 
     /* Legacy aliases — keep old references resolving to the new palette */
     --primary:var(--brand-600); --primary-soft:var(--brand-100);
@@ -56,7 +60,7 @@
     font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: var(--ink-800);
     /* Warm canvas with a whisper of brand tint at the top for depth. */
-    background: radial-gradient(1200px 460px at 50% -12%, rgba(95,81,208,.045), transparent 60%), var(--canvas);
+    background: radial-gradient(1200px 460px at 50% -12%, rgba(35,75,132,.045), transparent 60%), var(--canvas);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }

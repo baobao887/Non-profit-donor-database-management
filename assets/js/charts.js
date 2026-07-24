@@ -1,12 +1,24 @@
 import { formatCurrency } from './utils.js';
 
+// Navy design-system chart palette. Single-series lines use BRAND navy; the
+// categorical ring is a navy-anchored, well-separated order for doughnut
+// slices — identity is reinforced by the legend + tooltip, never colour
+// alone. These are decorative data-viz hues, NOT the semantic
+// success/warning/danger/info tokens (those stay reserved for status).
+const BRAND = '#234B84';                        // brand-600
+const BRAND_FILL = 'rgba(35, 75, 132, 0.14)';
+const SLICE_GAP = '#FDFCFA';                    // surface — 2px divider between slices
+const AXIS_INK = '#78726A';                     // ink-500 — ticks & legend text
+const GRIDLINE = 'rgba(210, 206, 198, 0.55)';   // warm ink-300 hairline
+const CATEGORICAL = ['#234B84', '#B4882A', '#2E8B7F', '#C6603D', '#8E5A93', '#5E8C6A'];
+
 export function initCharts() {
   if (typeof Chart === 'undefined') return;
 
   Chart.defaults.animation = false;
   Chart.defaults.interaction = { mode: 'nearest', intersect: false };
   Chart.defaults.plugins.tooltip.enabled = true;
-  Chart.defaults.plugins.legend.labels.color = '#64748B';
+  Chart.defaults.plugins.legend.labels.color = AXIS_INK;
 
   // Every chart starts empty — each page script fetches live data from its
   // API endpoint immediately after initCharts() and fills these in via
@@ -16,23 +28,27 @@ export function initCharts() {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{ label: 'Donations', data: [], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.18)', fill: true, tension: 0.45, pointRadius: 0, borderWidth: 3 }],
+        datasets: [{ label: 'Donations', data: [], borderColor: BRAND, backgroundColor: BRAND_FILL, fill: true, tension: 0.45, pointRadius: 0, borderWidth: 3 }],
       },
       options: chartLineOptions(),
     },
+    // Contribution mix by campaign. Rendered as a sorted horizontal BAR (not a
+    // pie): one navy hue, so it never has to cycle a categorical palette across
+    // many campaigns, and magnitudes are easy to compare. Canvas id kept as
+    // `pieChart` to preserve the existing hook; dashboard.js sorts + caps the rows.
     pieChart: {
-      type: 'doughnut',
+      type: 'bar',
       data: {
         labels: [],
-        datasets: [{ data: [], backgroundColor: ['#2563EB', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'], borderWidth: 0 }],
+        datasets: [{ label: 'Raised', data: [], backgroundColor: BRAND, borderRadius: 4, borderSkipped: false, maxBarThickness: 26 }],
       },
-      options: chartDoughnutOptions(),
+      options: chartBarOptions(),
     },
     campaignLineChart: {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{ label: 'Raised', data: [], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.18)', fill: true, tension: 0.4, pointRadius: 2 }],
+        datasets: [{ label: 'Raised', data: [], borderColor: BRAND, backgroundColor: BRAND_FILL, fill: true, tension: 0.4, pointRadius: 2 }],
       },
       options: chartLineOptions(),
     },
@@ -40,7 +56,7 @@ export function initCharts() {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{ label: 'Revenue', data: [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.18)', fill: true, tension: 0.4, pointRadius: 3 }],
+        datasets: [{ label: 'Revenue', data: [], borderColor: BRAND, backgroundColor: BRAND_FILL, fill: true, tension: 0.4, pointRadius: 3 }],
       },
       options: chartLineOptions(),
     },
@@ -48,9 +64,10 @@ export function initCharts() {
       type: 'doughnut',
       data: {
         labels: [],
-        // Six colors for the six payment methods (Cash, GCash, Card,
-        // Bank Transfer, PayPal, Check) so no slice falls back to gray.
-        datasets: [{ data: [], backgroundColor: ['#2563EB', '#8B5CF6', '#10B981', '#F59E0B', '#14B8A6', '#EC4899'], borderWidth: 0 }],
+        // Six navy-anchored categorical hues for the six payment methods
+        // (Cash, GCash, Card, Bank Transfer, PayPal, Check) so no slice
+        // falls back to gray.
+        datasets: [{ data: [], backgroundColor: CATEGORICAL, borderColor: SLICE_GAP, borderWidth: 2 }],
       },
       options: chartDoughnutOptions(),
     },
@@ -58,7 +75,7 @@ export function initCharts() {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{ label: 'Donations', data: [], borderColor: '#8B5CF6', backgroundColor: 'rgba(139, 92, 246, 0.18)', fill: true, tension: 0.35, pointRadius: 0 }],
+        datasets: [{ label: 'Donations', data: [], borderColor: BRAND, backgroundColor: BRAND_FILL, fill: true, tension: 0.35, pointRadius: 0 }],
       },
       options: chartLineOptions(),
     },
@@ -66,7 +83,7 @@ export function initCharts() {
       type: 'doughnut',
       data: {
         labels: [],
-        datasets: [{ data: [], backgroundColor: ['#2563EB', '#10B981', '#8B5CF6', '#F59E0B'], borderWidth: 0 }],
+        datasets: [{ data: [], backgroundColor: CATEGORICAL, borderColor: SLICE_GAP, borderWidth: 2 }],
       },
       options: chartDoughnutOptions(),
     },
@@ -75,7 +92,7 @@ export function initCharts() {
       type: 'doughnut',
       data: {
         labels: [],
-        datasets: [{ data: [], backgroundColor: ['#2563EB', '#EC4899', '#8B5CF6', '#94A3B8'], borderWidth: 0 }],
+        datasets: [{ data: [], backgroundColor: CATEGORICAL, borderColor: SLICE_GAP, borderWidth: 2 }],
       },
       options: chartDoughnutOptions(),
     },
@@ -97,11 +114,33 @@ function chartLineOptions() {
       tooltip: { callbacks: { label: (context) => formatCurrency(context.parsed.y) } },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: '#64748B' } },
+      x: { grid: { display: false }, ticks: { color: AXIS_INK } },
       y: {
-        grid: { color: 'rgba(148, 163, 184, 0.18)' },
-        ticks: { color: '#64748B', callback: (value) => formatCurrency(value) },
+        grid: { color: GRIDLINE },
+        ticks: { color: AXIS_INK, callback: (value) => formatCurrency(value) },
       },
+    },
+  };
+}
+
+// Horizontal bar (indexAxis 'y'): single navy series, categories down the y
+// axis, currency along x. Used by the dashboard contribution-mix chart.
+function chartBarOptions() {
+  return {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (context) => formatCurrency(context.parsed.x) } },
+    },
+    scales: {
+      x: {
+        grid: { color: GRIDLINE },
+        ticks: { color: AXIS_INK, callback: (value) => formatCurrency(value) },
+      },
+      y: { grid: { display: false }, ticks: { color: AXIS_INK } },
     },
   };
 }
@@ -111,7 +150,7 @@ function chartDoughnutOptions() {
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
-    plugins: { legend: { position: 'bottom', labels: { color: '#64748B' } } },
+    plugins: { legend: { position: 'bottom', labels: { color: AXIS_INK } } },
   };
 }
 

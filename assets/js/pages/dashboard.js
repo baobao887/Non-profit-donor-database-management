@@ -32,6 +32,14 @@ function renderStats(stats) {
   document.getElementById('stat-campaigns')?.replaceChildren(document.createTextNode(String(stats.campaignCount)));
   document.getElementById('stat-active-campaigns')?.replaceChildren(document.createTextNode(String(stats.activeCampaigns)));
   document.getElementById('stat-active-campaigns-display')?.replaceChildren(document.createTextNode(String(stats.activeCampaigns)));
+
+  // Mini progress on the Campaigns KPI card: the share of campaigns that are
+  // live. Real data only (activeCampaigns / campaignCount) — no fabricated deltas.
+  const totalCampaigns = Number(stats.campaignCount) || 0;
+  const liveCampaigns = Number(stats.activeCampaigns) || 0;
+  const livePct = totalCampaigns ? Math.round((liveCampaigns / totalCampaigns) * 100) : 0;
+  const campaignsBar = document.getElementById('stat-campaigns-bar');
+  if (campaignsBar) campaignsBar.style.width = livePct + '%';
 }
 
 function renderRecentDonations(donations = []) {
@@ -53,17 +61,17 @@ function renderTopDonors(donors = []) {
   container.innerHTML = donors.length ? donors.map((d, i) => {
     const name = `${d.first_name} ${d.last_name}`;
     return `
-    <div class="donor-card flex items-center justify-between rounded-3xl bg-white p-4 shadow-sm border border-slate-200">
+    <div class="donor-card flex items-center justify-between p-4">
       <div class="flex items-center gap-3">
         <div class="avatar ${avatarClass(i)}">${initials(name)}</div>
         <div>
           <p class="font-semibold">${escapeHtml(name)}</p>
-          <p class="text-slate-500 text-sm">${escapeHtml(d.donor_rank)} donor</p>
+          <p class="text-ink-500 text-sm">${escapeHtml(d.donor_rank)} donor</p>
         </div>
       </div>
       <p class="font-semibold">${formatCurrency(d.total_donated)}</p>
     </div>`;
-  }).join('') : '<p class="text-slate-500">No donors yet.</p>';
+  }).join('') : '<p class="text-ink-500">No donors yet.</p>';
 }
 
 function renderCampaignProgress(campaigns = []) {
@@ -74,31 +82,45 @@ function renderCampaignProgress(campaigns = []) {
     const raised = Number(c.amount_raised) || 0;
     const pct = Math.min(100, Math.round((raised / goal) * 100));
     const needsAttention = pct < 70;
-    const color = needsAttention ? 'from-amber-400 to-orange-500' : 'from-sky-500 to-indigo-600';
+    const barColor = needsAttention ? 'bg-warning-500' : 'bg-brand-600';
     return `
       <div class="progress-summary">
-        <div><p class="font-semibold">${escapeHtml(c.campaign_name)}</p><p class="text-slate-500 text-sm">${formatCurrency(raised)} raised of ${formatCurrency(goal)}</p></div>
-        <span class="badge ${needsAttention ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}">${needsAttention ? 'Needs attention' : 'On track'}</span>
+        <div><p class="font-semibold">${escapeHtml(c.campaign_name)}</p><p class="text-ink-500 text-sm">${formatCurrency(raised)} raised of ${formatCurrency(goal)}</p></div>
+        <span class="badge ${needsAttention ? 'bg-warning-100 text-warning-700' : 'bg-success-100 text-success-700'}">${needsAttention ? 'Needs attention' : 'On track'}</span>
       </div>
-      <div class="flex items-center gap-3"><div class="h-3 flex-1 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r ${color}" style="width:${pct}%"></div></div><span class="text-sm font-semibold text-slate-600">${pct}%</span></div>`;
-  }).join('') : '<p class="text-slate-500">No live campaign alerts right now.</p>';
+      <div class="flex items-center gap-3"><div class="h-3 flex-1 rounded-full bg-ink-200 overflow-hidden"><div class="h-full rounded-full ${barColor}" style="width:${pct}%"></div></div><span class="text-sm font-semibold text-ink-600">${pct}%</span></div>`;
+  }).join('') : '<p class="text-ink-500">No live campaign alerts right now.</p>';
 }
 
 // Real per-campaign donation split — replaces the old hardcoded
 // Recurring/One-time/Corporate/Events demo categories, which had no
-// corresponding column in the donations table.
+// corresponding column in the donations table. Rendered as a sorted horizontal
+// bar (see charts.js `pieChart`): sort by amount descending, then cap to the
+// top 5 + an honest "Other" total so the compact bar stays readable and the
+// chart never has to cycle colours across many campaigns.
 function renderDonationPieChart(breakdown = []) {
   if (typeof Chart === 'undefined') return;
   const chart = Chart.getChart('pieChart');
   if (!chart) return;
-  const withDonations = breakdown.filter((b) => Number(b.total) > 0);
-  chart.data.labels = withDonations.map((b) => b.campaign_name);
-  chart.data.datasets[0].data = withDonations.map((b) => Number(b.total));
+
+  const rows = breakdown
+    .filter((b) => Number(b.total) > 0)
+    .map((b) => ({ name: b.campaign_name, total: Number(b.total) }))
+    .sort((a, b) => b.total - a.total);
+
+  let display = rows;
+  if (rows.length > 6) {
+    const other = rows.slice(5).reduce((sum, r) => sum + r.total, 0);
+    display = [...rows.slice(0, 5), { name: 'Other', total: other }];
+  }
+
+  chart.data.labels = display.map((r) => r.name);
+  chart.data.datasets[0].data = display.map((r) => r.total);
   chart.update();
 }
 
 function emptyRow(cols, msg) {
-  return `<tr><td colspan="${cols}" class="empty-state px-6 py-8 text-center text-slate-500">${msg}</td></tr>`;
+  return `<tr><td colspan="${cols}" class="empty-state px-6 py-8 text-center">${msg}</td></tr>`;
 }
 
 function escapeHtml(str) {

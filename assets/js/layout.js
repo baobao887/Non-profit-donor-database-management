@@ -19,9 +19,9 @@ function currentPage() {
 }
 
 function navLink(item, active) {
-  const cls = active
-    ? 'nav-link group rounded-3xl px-4 py-3 bg-sky-50 shadow-sm border border-sky-100 text-sky-600'
-    : 'nav-link group rounded-3xl px-4 py-3 text-slate-600 hover:bg-slate-100';
+  // Colour, hover, the solid-navy active pill and the control radius all come
+  // from the .nav-link component (+ [aria-current]); keep only layout here.
+  const cls = 'nav-link group px-4 py-3';
   return `<a href="${item.href}" class="${cls}" ${active ? 'aria-current="page"' : ''}>
     <i class="fa-solid ${item.icon} mr-3"></i> ${item.label}
   </a>`;
@@ -70,19 +70,19 @@ export function renderTopBar(options = {}) {
   root.innerHTML = `
     <div class="topbar-actions flex flex-wrap items-center gap-3 justify-end">
       ${showSearch ? `
-      <div class="search-box flex items-center gap-3 rounded-3xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
-        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-        <input type="search" id="globalSearch" placeholder="Search donors, campaigns..." class="border-0 bg-transparent outline-none text-sm text-slate-700 w-48 md:w-64" />
+      <div class="search-box flex items-center gap-3 px-4 py-3">
+        <i class="fa-solid fa-magnifying-glass text-ink-400"></i>
+        <input type="search" id="globalSearch" placeholder="Search donors, campaigns..." class="border-0 bg-transparent outline-none text-sm text-ink-700 w-48 md:w-64" />
       </div>` : ''}
       <div class="relative">
         <button type="button" id="notificationButton" class="icon-button" aria-label="Notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i></button>
-        <div id="notificationMenu" class="notification-menu" hidden><p class="font-semibold px-4 py-3 border-b">Notifications</p><p class="px-4 py-3 text-sm text-slate-500">No new notifications</p></div>
+        <div id="notificationMenu" class="notification-menu" hidden><p class="font-semibold px-4 py-3 border-b">Notifications</p><p class="px-4 py-3 text-sm text-ink-500">No new notifications</p></div>
       </div>
       <div class="relative profile-pill-wrap">
-        <button type="button" id="profileButton" class="profile-pill inline-flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow-sm border border-slate-200" aria-haspopup="true" aria-expanded="false">
+        <button type="button" id="profileButton" class="profile-pill inline-flex items-center gap-3 px-4 py-2" aria-haspopup="true" aria-expanded="false">
           <div class="avatar h-9 w-9 text-sm" id="profileAvatar"></div>
           <span class="text-sm font-medium" id="profileName">…</span>
-          <i class="fa-solid fa-chevron-down text-slate-400"></i>
+          <i class="fa-solid fa-chevron-down text-ink-400"></i>
         </button>
         <div id="profileMenu" class="profile-menu" role="menu">
           <div class="profile-menu-header">
